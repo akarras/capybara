@@ -104,6 +104,7 @@ pub struct GetPost {
     pub auth: Option<Sensitive<String>>,
 }
 
+#[skip_serializing_none]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 /// The post response.
 pub struct GetPostResponse {
@@ -111,7 +112,7 @@ pub struct GetPostResponse {
     pub community_view: CommunityView,
     pub moderators: Vec<CommunityModeratorView>,
     /// A list of cross-posts, or other times / communities this link has been posted to.
-    pub cross_posts: Vec<PostView>,
+    pub cross_posts: Option<Vec<PostView>>,
 }
 
 #[derive(EnumString, Display, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]

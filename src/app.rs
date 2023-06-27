@@ -5,8 +5,8 @@ use capybara_lemmy_client::{
 };
 use leptos::leptos_dom::ev::SubmitEvent;
 use leptos::*;
-use leptos_router::*;
 use leptos_meta::*;
+use leptos_router::*;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
 use std::panic;
@@ -31,7 +31,7 @@ pub fn App(cx: Scope) -> impl IntoView {
     view! { cx,
         <Body class="bg-neutral-100 dark:bg-neutral-900 text-base dark:text-white"/>
         <main class="container mx-auto px-4">
-            <div class="flex-row">
+            <div class="flex flex-row gap-2">
                 <a href="/">"home"</a>
                 <a href="/login">"Login"</a>
             </div>
@@ -56,7 +56,7 @@ fn Posts(cx: Scope) -> impl IntoView {
             let client = use_context::<CapyClient>(cx).expect("need client");
             Some(
                 client
-                    .get_posts(GetPosts {
+                    .execute(GetPosts {
                         ..Default::default()
                     })
                     .await
@@ -67,7 +67,6 @@ fn Posts(cx: Scope) -> impl IntoView {
     view! {cx,
     <div>
         <Suspense fallback=move || view!{cx, "Loading"}>
-
             {move || {
                 posts.read(cx).map(|post| {
                     post.map(|p| {

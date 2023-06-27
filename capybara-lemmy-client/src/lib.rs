@@ -2,13 +2,12 @@ use std::sync::Arc;
 
 use crate::error::Result;
 use async_trait::async_trait;
+use comment::{GetComments, GetCommentsResponse};
 use error::ClientError;
-use gloo_net::http::Request;
 use log::info;
-use post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse, PostId, PostResponse};
+use post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
-use url::{quirks::host, Url};
 use wasm_bindgen::prelude::*;
 
 pub mod comment;
@@ -93,6 +92,14 @@ impl LemmyRequest for GetPosts {
     }
 }
 
+impl LemmyRequest for GetComments {
+    type Response = GetCommentsResponse;
+
+    fn get_path() -> &'static str {
+        "/comment/list"
+    }
+}
+
 impl CapyClient {
     pub async fn execute<T>(&self, args: T) -> Result<T::Response>
     where
@@ -109,14 +116,6 @@ impl CapyClient {
                 // client: Client::new(),
             }),
         }
-    }
-
-    pub async fn get_posts(&self, posts: GetPosts) -> Result<GetPostsResponse> {
-        self.execute(posts).await
-    }
-
-    pub async fn get_post(&self, get_post: GetPost) -> Result<GetPostResponse> {
-        self.execute(get_post).await
     }
 }
 
