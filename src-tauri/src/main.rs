@@ -17,7 +17,11 @@ async fn get_http(url: String) -> Option<String> {
 
 fn main() {
     tauri::Builder::default()
-        .plugin(tauri_plugin_log::Builder::default().targets([LogTarget::Stdout, LogTarget::Webview]).build())
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .targets([LogTarget::Stdout, LogTarget::Webview])
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![greet, get_http])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

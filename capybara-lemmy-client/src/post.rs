@@ -96,7 +96,7 @@ pub struct PostResponse {
 }
 
 #[skip_serializing_none]
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 /// Get a post. Needs either the post id, or comment_id.
 pub struct GetPost {
     pub id: Option<PostId>,

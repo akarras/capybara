@@ -2,6 +2,7 @@
   "build": {
     "beforeDevCommand": "trunk serve",
     "beforeBuildCommand": "trunk build",
+    "beforeBundleCommand": "tailwind -i styles.in.css -o styles.css",
     "devPath": "http://localhost:1420",
     "distDir": "../dist",
     "withGlobalTauri": true
@@ -38,8 +39,8 @@
         "fullscreen": false,
         "resizable": true,
         "title": "capybara",
-        "width": 800,
-        "height": 600
+        "width": 1600,
+        "height": 1200
       }
     ]
   }

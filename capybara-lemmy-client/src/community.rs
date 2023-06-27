@@ -1,8 +1,8 @@
 use crate::{instance::InstanceId, person::Person};
 use serde::{Deserialize, Serialize};
+use serde_with::skip_serializing_none;
 use strum::{Display, EnumString};
 use url::Url;
-use serde_with::skip_serializing_none;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Default, Serialize, Deserialize)]
 pub struct CommunityId(pub i32);

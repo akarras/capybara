@@ -1,3 +1,4 @@
+use crate::components::{feed::post_preview::*, post::Post};
 use capybara_lemmy_client::{
     post::{GetPost, GetPosts},
     CapyClient,
@@ -5,10 +6,11 @@ use capybara_lemmy_client::{
 use leptos::leptos_dom::ev::SubmitEvent;
 use leptos::*;
 use leptos_router::*;
+use leptos_meta::*;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
-use wasm_bindgen::prelude::*;
 use std::panic;
+use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
 extern "C" {
@@ -27,15 +29,18 @@ pub fn App(cx: Scope) -> impl IntoView {
     wasm_logger::init(wasm_logger::Config::default());
     provide_context(cx, CapyClient::new("https://lemmy.world"));
     view! { cx,
-        <main class="container">
-            <div class="row">
-                <a href="/">"router"</a>
+        <Body class="bg-neutral-100 dark:bg-neutral-900 text-base dark:text-white"/>
+        <main class="container mx-auto px-4">
+            <div class="flex-row">
+                <a href="/">"home"</a>
                 <a href="/login">"Login"</a>
             </div>
             <Router>
                 <Routes>
-                    <Route path="/" view=Posts />
                     <Route path="/login" view=Login />
+                    <Route path="/post/:id" view=Post />
+                    <Route path="/" view=Posts />
+                    <Route path="" view=move |_cx| view!{cx, "404 not found"}/>
                 </Routes>
             </Router>
         </main>
@@ -47,13 +52,16 @@ fn Posts(cx: Scope) -> impl IntoView {
     let posts = create_local_resource(
         cx,
         move || {},
-        move |_| {
-            async move {
-                let client = use_context::<CapyClient>(cx).expect("need client");
-                Some(client.get_posts(GetPosts {
-                    ..Default::default()
-                }).await.unwrap())
-            }
+        move |_| async move {
+            let client = use_context::<CapyClient>(cx).expect("need client");
+            Some(
+                client
+                    .get_posts(GetPosts {
+                        ..Default::default()
+                    })
+                    .await
+                    .unwrap(),
+            )
         },
     );
     view! {cx,
@@ -64,8 +72,8 @@ fn Posts(cx: Scope) -> impl IntoView {
                 posts.read(cx).map(|post| {
                     post.map(|p| {
                         p.posts.into_iter().map(|post| {
-                            view!{cx, 
-                                <div>{post.post.name}</div>
+                            view!{cx,
+                                <PostPreview post />
                             }
                         }).collect::<Vec<_>>()
                     })

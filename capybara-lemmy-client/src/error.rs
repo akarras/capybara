@@ -7,5 +7,9 @@ pub enum ClientError {
     #[error("HTTP error {0}")]
     GlooNet(#[from] gloo_net::Error),
     #[error("Query string error {0}")]
-    QueryString(#[from] serde_qs::Error)
+    QueryString(#[from] serde_qs::Error),
+    #[error("Json error {0}")]
+    JsonError(#[from] serde_json::Error),
+    #[error("HTTP Error")]
+    HttpError,
 }
