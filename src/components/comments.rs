@@ -5,10 +5,11 @@ use capybara_lemmy_client::{
     post::PostId,
     CapyClient,
 };
+use comrak::{markdown_to_html, ComrakOptions};
 use leptos::*;
 use log::info;
 
-use crate::components::{community::CommunityBadge, person::PersonView};
+use crate::components::{community::CommunityBadge, markdown::Markdown, person::PersonView};
 
 struct CommentWithChildren(CommentView, Vec<CommentWithChildren>);
 
@@ -106,7 +107,7 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
         hot_rank,
     } = counts;
     view! { cx,
-        <div class="border-l-red-300 border-l-2">
+        <div class="border-l-red-300 border-l-2 bg-gray-900 m-4">
             <div class="flex flex-row">
                 <div>{child_count}" comments"</div>
                 <div>{upvotes}" u"</div>
@@ -119,7 +120,7 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
                     <PersonView person=creator/>
                     <CommunityBadge community />
                 </div>
-                <div class="prose">{content}</div>
+                <Markdown content />
                 <div class="flex flex-row">{saved.then(|| "saved")}" "{}</div>
                 <div class="m-5">
                     {children.into_iter().map(|comment| {

@@ -9,7 +9,8 @@ module.exports = {
     extend: {
       aria: {
         current: 'current'
-      }
+      },
+      visibility: 'group-hover'
     },
   },
   plugins: [

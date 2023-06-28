@@ -33,13 +33,12 @@ pub fn CommunityBadge(cx: Scope, community: Community) -> impl IntoView {
         <a href=format!("/community/{}", id.0) class="group flex flex-row underline text-red-400 hover:text-red-600">
             {icon.map(|icon| view!{cx, <img class="rounded w-6 h-6" src=icon.to_string()/>})}
             {name}
-            {actor_id.to_string()}
-            {(!local).then(|| view!{cx, <div class="">{actor_id.to_string()}</div>})}
-            <div class="flex-col hidden group-hover:absolute p-5 z-10">
+            {(!local).then(|| view!{cx, <div class="italic">"@"{actor_id.host_str().unwrap_or_default().to_string()}</div>})}
+            <div class="flex-col hidden group-hover:visible absolute p-5 z-10">
                 <div>{title}</div>
                 <div>{description}</div>
             </div>
-            
+
         </a>
     }
 }

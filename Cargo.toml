@@ -20,6 +20,8 @@ wasm-logger = "0.2.0"
 console_error_panic_hook = "0.1.7"
 reqwest = "0.11.15"
 web-sys = {version = "0.3", features = ["History", "Window"]}
+chrono = "0.4.24"
+comrak = { version = "0.18.0", default-features = false }
 
 # leptos-use is on leptos main
 # [patch.crates-io]

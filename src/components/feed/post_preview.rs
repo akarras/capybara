@@ -1,7 +1,9 @@
 use capybara_lemmy_client::post::{Post, PostAggregates, PostView};
 use leptos::*;
 
-use crate::components::{community::CommunityBadge, person::PersonView};
+use crate::components::{
+    community::CommunityBadge, markdown::Markdown, person::PersonView, time::RelativeTime,
+};
 
 #[component]
 pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
@@ -63,8 +65,9 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                 "to"
                 <CommunityBadge community />
                     {locked.then(|| view!{cx, <div class="bg-slate-500 px-2 rounded">"locked"</div>})}
-                    {local.then(|| view!{cx, <div class="bg-gray-600 px-2 rounded">"local"</div>})}
                     {nsfw.then(|| view!{cx, <div class="bg-red-600 px-2 rounded">"nsfw"</div>})}
+                    <RelativeTime time=published/>
+                    {updated.map(|u| view!{cx, "(updated "<RelativeTime time=u/>")"})}
             </div>
             <div class="flex flex-row">
                 <div class="text-lg">{name}</div>
@@ -83,7 +86,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                 })}
             {body
                 .map(|body| {
-                    view! { cx, <div class="bg-gray-800 prose dark:prose-invert">{body}</div> }
+                    view! { cx, <Markdown content=body /> }
                 })}
             {embed_title
                 .map(|title| {

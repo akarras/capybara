@@ -1,5 +1,10 @@
-use leptos::{*, html::{Body, body}};
-use leptos_use::{use_scroll, UseScrollReturn, use_scroll_with_options, UseScrollOptions, ScrollOffset};
+use leptos::{
+    html::{body, Body},
+    *,
+};
+use leptos_use::{
+    use_scroll, use_scroll_with_options, ScrollOffset, UseScrollOptions, UseScrollReturn,
+};
 use log::info;
 use std::{future::Future, hash::Hash};
 use web_sys::HtmlDivElement;
@@ -35,10 +40,19 @@ where
         arrived_state,
         directions,
         measure,
-    } = use_scroll(cx, scroller);
+    } = use_scroll_with_options(
+        cx,
+        scroller,
+        UseScrollOptions::default().offset(ScrollOffset {
+            top: 0.0,
+            bottom: 250.0,
+            right: 0.0,
+            left: 0.0,
+        }),
+    );
     let hydrate = move || {
         if !hydrating.get_untracked() {
-        set_hydrating(true);
+            set_hydrating(true);
             spawn_local(async move {
                 current_page.update(|p| *p += 1);
                 let page = current_page.get_untracked();
@@ -52,16 +66,17 @@ where
     };
     let at_bottom = create_memo(cx, move |_| arrived_state().bottom);
     create_effect(cx, move |_| {
-        
         info!("{} {} {} {}", hydrating(), at_bottom(), is_scrolling(), y());
         if !hydrating() && at_bottom() {
-            hydrate();      
+            hydrate();
         }
     });
-    
-    
+
     view! {cx,
     <div class="max-h-screen overflow-y-auto" node_ref=scroller>
+        <button class="bg-gray-700 px-10 text-3xl absolute bottom-10 right-10 rounded-md" on:click=move |_| {
+            set_y(0.0);
+        }>"Back to top"</button>
         <For
         each=data
         key
@@ -72,9 +87,7 @@ where
         {move || (!hydrating()).then(|| view!{cx, <button class="bg-gray-300 rounded px-3" on:click=move |_| {
             hydrate();
         }>"load more"</button>})}
-        <button class="bg-gray-700 rounded px-3 sticky bottom-2 right-2" on:click=move |_| {
-            set_y(0.0);
-        }>"Back to top"</button>
+
     </div>}
 }
 
