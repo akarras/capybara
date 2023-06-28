@@ -17,10 +17,10 @@ pub fn PersonView(cx: Scope, person: Person) -> impl IntoView {
         ..
     } = person;
     view! { cx,
-        <a class="flex flex-row underline text-red-400" class:bold=admin class:italic=local class:line-through=deleted href=format!("/person/{}", id.0)>
+        <a class="flex flex-row underline text-red-400 hover:text-red-600" class:bold=admin class:italic=local class:line-through=deleted href=format!("/person/{}", id.0)>
             {avatar
                 .map(|a| {
-                    view! { cx, <img class="w-10 h-10 rounded-full p-r-2" src=a.to_string()/> }
+                    view! { cx, <img class="w-6 h-6 rounded-full p-r-2" src=a.to_string()/> }
                 })}
             <div class="font-lg">{name}</div>
         </a>

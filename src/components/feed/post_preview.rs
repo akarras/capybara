@@ -58,37 +58,32 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
     } = post;
     view! { cx,
         <div class="bg-gray-800 hover:bg-gray-700 p-4 m-5">
-            <div class="flex flex-row gap-3">
+            <div class="flex flex-row gap-1">
                 <PersonView person=creator/>
                 "to"
                 <CommunityBadge community />
+                    {locked.then(|| view!{cx, <div class="bg-slate-500 px-2 rounded">"locked"</div>})}
+                    {local.then(|| view!{cx, <div class="bg-gray-600 px-2 rounded">"local"</div>})}
+                    {nsfw.then(|| view!{cx, <div class="bg-red-600 px-2 rounded">"nsfw"</div>})}
             </div>
             <div class="flex flex-row">
-                {name} " " {locked.then(|| "locked")} " " {local.then(|| "local")} " "
-                {nsfw.then(|| "nsfw")}
+                <div class="text-lg">{name}</div>
             </div>
             {url
                 .map(|url| {
                     view! { cx,
-                        <a class="text-gray-500 hover:text-gray-400 underline" href=url.to_string()>
+                        <a target="_blank" class="text-gray-500 hover:text-gray-400 underline" href=url.to_string()>
                             {url.to_string()}
                         </a>
                     }
                 })}
-            <div class="flex-row">
-                <a href=format!("/post/{}", id.0)>
-                    <div class="text-gray-300">
-                        {comments} " comments (" {unread_comments} " unread)"
-                    </div>
-                </a>
-            </div>
             {thumbnail_url
                 .map(|url| {
                     view! { cx, <img class="h-96 w-96 object-scale-down" src=url.to_string()/> }
                 })}
             {body
                 .map(|body| {
-                    view! { cx, <div class="prose dark:prose-invert">{body}</div> }
+                    view! { cx, <div class="bg-gray-800 prose dark:prose-invert">{body}</div> }
                 })}
             {embed_title
                 .map(|title| {
@@ -100,8 +95,14 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                 })}
             {embed_video_url
                 .map(|url| {
-                    view! { cx, <video class="h-96 w-96 object-scale-down" src=url.to_string()></video> }
+                    view! { cx, <iframe class="h-96 w-fit aspect-video" src=url.to_string()></iframe> }
                 })}
+            <div class="flex-row">
+                {score}" score "{upvotes}" ⬆️ "{downvotes}" ⬇️"
+                <a class="text-gray-300 hover:text-gray-500" href=format!("/post/{}", id.0)>
+                    {comments} " comments " {(comments != unread_comments && unread_comments != 0).then(|| view!{cx, <div class="text-red-300">"(" {unread_comments} " unread)"</div>})}
+                </a>
+            </div>
         </div>
     }
 }

@@ -2,7 +2,6 @@
   "build": {
     "beforeDevCommand": "trunk serve",
     "beforeBuildCommand": "trunk build",
-    "beforeBundleCommand": "./tailwindcss -i styles.in.css -o styles.css",
     "devPath": "http://localhost:1420",
     "distDir": "../dist",
     "withGlobalTauri": true
