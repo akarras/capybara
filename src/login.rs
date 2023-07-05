@@ -1,11 +1,8 @@
-use capybara_lemmy_client::{
-    person::{GetPersonDetails, Login as LemmyLogin},
-    sensitive::Sensitive,
-    CapyClient,
-};
+use capybara_lemmy_client::{person::Login as LemmyLogin, sensitive::Sensitive, CapyClient};
 use leptos::*;
+use leptos_router::{use_navigate, NavigateOptions};
 
-use crate::{app::CurrentUser, settings::Settings};
+use crate::settings::Settings;
 
 #[component]
 pub(crate) fn Login(cx: Scope) -> impl IntoView {
@@ -55,7 +52,6 @@ pub(crate) fn Login(cx: Scope) -> impl IntoView {
                 <button
                     class="p-2 bg-blue-500 dark:bg-blue-700 text-white dark:text-gray-200 rounded-md"
                     on:click=move |e| {
-                        // e.cancel_default();
                         let login_request = LemmyLogin {
                             username_or_email: Sensitive::new(username.get_untracked()),
                             password: Sensitive::new(password.get_untracked()),
@@ -68,7 +64,8 @@ pub(crate) fn Login(cx: Scope) -> impl IntoView {
 
                             Settings::set_login(cx, jwt.clone());
                             log!("logged in!");
-
+                            let navigate = use_navigate(cx);
+                            navigate("/", NavigateOptions::default()).unwrap();
                         });
                     }
                 >

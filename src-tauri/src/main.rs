@@ -5,12 +5,6 @@ use reqwest::Client;
 use tauri::State;
 use tauri_plugin_log::LogTarget;
 
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-#[tauri::command]
-fn greet(name: &str) -> String {
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
-
 #[tauri::command]
 async fn get_http(client: State<'_, Client>, url: String) -> Result<String, String> {
     Ok(client
@@ -45,7 +39,7 @@ fn main() {
                 .build(),
         )
         .manage(Client::new())
-        .invoke_handler(tauri::generate_handler![greet, get_http, post_http])
+        .invoke_handler(tauri::generate_handler![get_http, post_http])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }

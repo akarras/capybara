@@ -38,7 +38,7 @@ pub fn CommunityBadge(cx: Scope, community: Community) -> impl IntoView {
                 <div>{title}</div>
                 <div>{description}</div>
             </div>
-
+            {nsfw.then(|| view!{cx, <div class="bg-red-500 rounded">"NSFW"</div>})}
         </a>
     }
 }

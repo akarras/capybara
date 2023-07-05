@@ -6,7 +6,7 @@ use comment::{GetComments, GetCommentsResponse};
 use error::ClientError;
 use log::info;
 use person::{GetPersonDetails, GetPersonDetailsResponse, Login, LoginResponse};
-use post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse};
+use post::{CreatePostLike, GetPost, GetPostResponse, GetPosts, GetPostsResponse, PostResponse};
 use sensitive::Sensitive;
 use serde::{de::DeserializeOwned, Serialize};
 use serde_wasm_bindgen::to_value;
@@ -104,7 +104,7 @@ pub trait LemmyRequest {
     type Response;
     fn get_path() -> &'static str;
 
-    fn set_auth(&mut self, jwt: Option<Sensitive<String>>);
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()>;
 
     fn get_http_mode() -> HttpMode;
 
@@ -130,7 +130,7 @@ pub trait LemmyRequest {
         Self: Sized,
     {
         let auth = client.inner.borrow().jwt.clone();
-        self.set_auth(auth);
+        self.set_auth(auth)?;
         let url = self.get_url(client)?;
         match Self::get_http_mode() {
             HttpMode::GET => {
@@ -154,12 +154,30 @@ impl LemmyRequest for GetPost {
         "/post"
     }
 
-    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) {
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()> {
         self.auth = jwt;
+        Ok(())
     }
 
     fn get_http_mode() -> HttpMode {
         HttpMode::GET
+    }
+}
+
+impl LemmyRequest for CreatePostLike {
+    type Response = PostResponse;
+
+    fn get_path() -> &'static str {
+        "/post/like"
+    }
+
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()> {
+        self.auth = jwt.ok_or(ClientError::NotAuthorized)?;
+        Ok(())
+    }
+
+    fn get_http_mode() -> HttpMode {
+        HttpMode::POST
     }
 }
 
@@ -170,8 +188,9 @@ impl LemmyRequest for GetPosts {
         "/post/list"
     }
 
-    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) {
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()> {
         self.auth = jwt;
+        Ok(())
     }
 
     fn get_http_mode() -> HttpMode {
@@ -186,8 +205,9 @@ impl LemmyRequest for GetComments {
         "/comment/list"
     }
 
-    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) {
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()> {
         self.auth = jwt;
+        Ok(())
     }
 
     fn get_http_mode() -> HttpMode {
@@ -202,8 +222,9 @@ impl LemmyRequest for GetPersonDetails {
         "/user"
     }
 
-    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) {
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()> {
         self.auth = jwt;
+        Ok(())
     }
 
     fn get_http_mode() -> HttpMode {
@@ -218,7 +239,9 @@ impl LemmyRequest for Login {
         "/user/login"
     }
 
-    fn set_auth(&mut self, _: Option<Sensitive<String>>) {}
+    fn set_auth(&mut self, _: Option<Sensitive<String>>) -> Result<()> {
+        Ok(())
+    }
 
     fn get_http_mode() -> HttpMode {
         HttpMode::POST
@@ -232,8 +255,9 @@ impl LemmyRequest for GetSite {
         "/site"
     }
 
-    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) {
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()> {
         self.auth = jwt;
+        Ok(())
     }
 
     fn get_http_mode() -> HttpMode {

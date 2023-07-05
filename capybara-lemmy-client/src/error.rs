@@ -12,4 +12,6 @@ pub enum ClientError {
     JsonError(#[from] serde_json::Error),
     #[error("HTTP Error")]
     HttpError,
+    #[error("Must be authorized to use this API endpoint")]
+    NotAuthorized,
 }

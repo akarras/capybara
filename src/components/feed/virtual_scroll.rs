@@ -1,11 +1,5 @@
-use leptos::{
-    html::{body, Body},
-    *,
-};
-use leptos_use::{
-    use_scroll, use_scroll_with_options, ScrollOffset, UseScrollOptions, UseScrollReturn,
-};
-use log::info;
+use leptos::*;
+use leptos_use::{use_scroll_with_options, ScrollOffset, UseScrollOptions, UseScrollReturn};
 use std::{future::Future, hash::Hash};
 use web_sys::HtmlDivElement;
 
@@ -16,7 +10,6 @@ pub fn InfinitePage<P, PFut, K, KF, VF, V, T>(
     initial_data: Vec<T>,
     key: KF,
     view: VF,
-    page_size: usize,
 ) -> impl IntoView
 where
     P: Fn(usize) -> PFut + 'static + Copy,
@@ -32,14 +25,9 @@ where
     let (hydrating, set_hydrating) = create_signal(cx, false);
     let current_page = create_rw_signal(cx, 1);
     let UseScrollReturn {
-        x,
-        set_x,
-        y,
         set_y,
-        is_scrolling,
         arrived_state,
-        directions,
-        measure,
+        ..
     } = use_scroll_with_options(
         cx,
         scroller,

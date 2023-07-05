@@ -7,7 +7,9 @@ use capybara_lemmy_client::{
 };
 use leptos::*;
 
-use crate::components::{community::CommunityBadge, markdown::Markdown, person::PersonView};
+use crate::components::{
+    community::CommunityBadge, markdown::Markdown, person::PersonView, time::RelativeTime,
+};
 
 struct CommentWithChildren(CommentView, Vec<CommentWithChildren>);
 
@@ -107,23 +109,36 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
     view! { cx,
         <div class="border-l-red-300 border-l-2 bg-gray-900 p-4">
             <div class="flex flex-row gap-2">
-                <div class="p-1 rounded bg-gray-200 hover:bg-gray-600 broder-1 border-gray-200" on:click=move |_| { set_collapsed(!collapsed())}>{move || if collapsed() { "+" } else { "-" }}</div>
-                <div>{child_count}" comments"</div>
-                <div>{score}" score "</div>
-                <div>{upvotes}"⬆️"</div>
-                <div>{downvotes}"⬇️"</div>
+                <div
+                    class="p-1 rounded bg-gray-200 hover:bg-gray-600 broder-1 border-gray-200"
+                    on:click=move |_| { set_collapsed(!collapsed()) }
+                >
+                    {move || if collapsed() { "+" } else { "-" }}
+                </div>
+                {(child_count != 0).then(|| view!{cx, <div>{child_count} " comments"</div>})}
+                <div>{score} " score "</div>
+                <div>{upvotes} "⬆️"</div>
+                <div>{downvotes} "⬇️"</div>
             </div>
             <div class="flex flex-col transition" class:hidden=collapsed>
                 <div class="flex flex-row">
                     <PersonView person=creator/>
-                    <CommunityBadge community />
+                    <CommunityBadge community/>
                 </div>
-                <Markdown content />
-                <div class="flex flex-row">{saved.then(|| "saved")}" "{}</div>
+                <Markdown content/>
+                <div class="flex flex-row">
+                    {saved.then(|| "saved")} " " {} " " <RelativeTime time=published/> {updated
+                        .map(|u| {
+                            view! { cx, <RelativeTime time=u/> }
+                        })}
+                </div>
                 <div class="m-5">
-                    {children.into_iter().map(|comment| {
-                        view!{cx, <Comment comment/>}
-                    }).collect::<Vec<_>>()}
+                    {children
+                        .into_iter()
+                        .map(|comment| {
+                            view! { cx, <Comment comment/> }
+                        })
+                        .collect::<Vec<_>>()}
                 </div>
             </div>
         </div>
@@ -151,14 +166,23 @@ pub fn PostComments(cx: Scope, post_id: PostId) -> impl IntoView {
         },
     );
 
-    view! {cx,
-    <Suspense fallback=move || view!{cx, "Loading"}>
-        {move || post_comments.read(cx).map(|comments| {
-            let comments = CommentWithChildren::from_comments(comments.comments);
-            comments.into_iter().map(|comment| {
-                view!{cx, <Comment comment=comment />}
-            }).collect::<Vec<_>>()
-        })}
-    </Suspense>
+    view! { cx,
+        <Suspense fallback=move || {
+            view! { cx, "Loading" }
+        }>
+            {move || {
+                post_comments
+                    .read(cx)
+                    .map(|comments| {
+                        let comments = CommentWithChildren::from_comments(comments.comments);
+                        comments
+                            .into_iter()
+                            .map(|comment| {
+                                view! { cx, <Comment comment=comment/> }
+                            })
+                            .collect::<Vec<_>>()
+                    })
+            }}
+        </Suspense>
     }
 }

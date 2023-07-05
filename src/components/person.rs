@@ -8,11 +8,9 @@ pub fn PersonView(cx: Scope, person: Person) -> impl IntoView {
         avatar,
         banned,
         local,
-        updated,
         actor_id,
         admin,
         deleted,
-        instance_id,
         id,
         ..
     } = person;
