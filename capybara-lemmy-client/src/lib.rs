@@ -1,23 +1,29 @@
-use std::sync::Arc;
+use std::{cell::RefCell, rc::Rc};
 
 use crate::error::Result;
 use async_trait::async_trait;
 use comment::{GetComments, GetCommentsResponse};
 use error::ClientError;
 use log::info;
+use person::{GetPersonDetails, GetPersonDetailsResponse, Login, LoginResponse};
 use post::{GetPost, GetPostResponse, GetPosts, GetPostsResponse};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use sensitive::Sensitive;
+use serde::{de::DeserializeOwned, Serialize};
 use serde_wasm_bindgen::to_value;
+use site::{GetSite, GetSiteResponse};
 use wasm_bindgen::prelude::*;
 
 pub mod comment;
 pub mod community;
 pub mod error;
 pub mod instance;
+pub mod language;
+pub mod local_user;
 pub mod person;
 /// This library is a rip from lemmy's own api_common.
 pub mod post;
 pub mod sensitive;
+pub mod site;
 
 #[wasm_bindgen]
 extern "C" {
@@ -27,17 +33,23 @@ extern "C" {
 
 #[derive(Clone)]
 pub struct CapyClient {
-    inner: Arc<ClientImpl>,
+    inner: Rc<RefCell<ClientImpl>>,
 }
 
 struct ClientImpl {
     hostname: String,
-    // client: Client,
+    jwt: Option<Sensitive<String>>,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Serialize)]
 struct HttpArgs {
     url: String,
+}
+
+#[derive(Serialize)]
+struct HttpPostArgs {
+    url: String,
+    body: String,
 }
 
 async fn get_http(url: &str) -> Option<String> {
@@ -54,25 +66,84 @@ where
     T: DeserializeOwned,
 {
     let string_data = get_http(url).await.ok_or(ClientError::HttpError)?;
+    info!("fetching {url}");
+    // info!("returned json: {string_data}");
     Ok(serde_json::from_str(&string_data)?)
+}
+
+async fn post_http(url: &str, json_body: &impl Serialize) -> Option<String> {
+    let body = serde_json::to_string(json_body).ok()?;
+    let args = to_value(&HttpPostArgs {
+        url: url.to_string(),
+        body,
+    })
+    .unwrap();
+    info!("fetching url {url}");
+    let result = invoke("post_http", args).await;
+    result.as_string()
+}
+
+async fn post_json<T, D>(url: &str, obj: &D) -> Result<T>
+where
+    T: DeserializeOwned,
+    D: Serialize,
+{
+    info!("fetching url {url}");
+    let string_data = post_http(url, obj).await.ok_or(ClientError::HttpError)?;
+    info!("{string_data}");
+    Ok(serde_json::from_str(&string_data)?)
+}
+
+pub enum HttpMode {
+    GET,
+    POST,
 }
 
 #[async_trait(?Send)]
 pub trait LemmyRequest {
     type Response;
     fn get_path() -> &'static str;
-    async fn execute(&self, client: &CapyClient) -> Result<Self::Response>
+
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>);
+
+    fn get_http_mode() -> HttpMode;
+
+    fn get_url(&self, client: &CapyClient) -> Result<String>
     where
-        Self::Response: DeserializeOwned,
         Self: Serialize,
     {
-        let hostname = &client.inner.hostname;
+        let hostname = &client.inner.borrow().hostname;
         let path = Self::get_path();
-        let query = serde_qs::to_string(&self)?;
-        let url = format!("{hostname}/api/v3{path}?{query}");
-        info!("fetching {url}");
-        let response = get_json(&url).await?;
-        Ok(response)
+        match Self::get_http_mode() {
+            HttpMode::GET => {
+                let query = serde_qs::to_string(&self)?;
+                Ok(format!("{hostname}/api/v3{path}?{query}"))
+            }
+            HttpMode::POST => Ok(format!("{hostname}/api/v3{path}")),
+        }
+    }
+
+    async fn execute(mut self, client: &CapyClient) -> Result<Self::Response>
+    where
+        Self::Response: DeserializeOwned + core::fmt::Debug,
+        Self: Serialize,
+        Self: Sized,
+    {
+        let auth = client.inner.borrow().jwt.clone();
+        self.set_auth(auth);
+        let url = self.get_url(client)?;
+        match Self::get_http_mode() {
+            HttpMode::GET => {
+                let response = get_json(&url).await?;
+                info!("GET {response:?}");
+                return Ok(response);
+            }
+            HttpMode::POST => {
+                let response = post_json(&url, &self).await?;
+                info!("POST received {response:?}");
+                return Ok(response);
+            }
+        }
     }
 }
 
@@ -82,6 +153,14 @@ impl LemmyRequest for GetPost {
     fn get_path() -> &'static str {
         "/post"
     }
+
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) {
+        self.auth = jwt;
+    }
+
+    fn get_http_mode() -> HttpMode {
+        HttpMode::GET
+    }
 }
 
 impl LemmyRequest for GetPosts {
@@ -89,6 +168,14 @@ impl LemmyRequest for GetPosts {
 
     fn get_path() -> &'static str {
         "/post/list"
+    }
+
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) {
+        self.auth = jwt;
+    }
+
+    fn get_http_mode() -> HttpMode {
+        HttpMode::GET
     }
 }
 
@@ -98,24 +185,83 @@ impl LemmyRequest for GetComments {
     fn get_path() -> &'static str {
         "/comment/list"
     }
+
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) {
+        self.auth = jwt;
+    }
+
+    fn get_http_mode() -> HttpMode {
+        HttpMode::GET
+    }
+}
+
+impl LemmyRequest for GetPersonDetails {
+    type Response = GetPersonDetailsResponse;
+
+    fn get_path() -> &'static str {
+        "/user"
+    }
+
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) {
+        self.auth = jwt;
+    }
+
+    fn get_http_mode() -> HttpMode {
+        HttpMode::GET
+    }
+}
+
+impl LemmyRequest for Login {
+    type Response = LoginResponse;
+
+    fn get_path() -> &'static str {
+        "/user/login"
+    }
+
+    fn set_auth(&mut self, _: Option<Sensitive<String>>) {}
+
+    fn get_http_mode() -> HttpMode {
+        HttpMode::POST
+    }
+}
+
+impl LemmyRequest for GetSite {
+    type Response = GetSiteResponse;
+
+    fn get_path() -> &'static str {
+        "/site"
+    }
+
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) {
+        self.auth = jwt;
+    }
+
+    fn get_http_mode() -> HttpMode {
+        HttpMode::GET
+    }
 }
 
 impl CapyClient {
     pub async fn execute<T>(&self, args: T) -> Result<T::Response>
     where
-        T: LemmyRequest + Serialize,
-        T::Response: DeserializeOwned,
+        T: LemmyRequest + Serialize + Sized,
+        T::Response: DeserializeOwned + std::fmt::Debug,
     {
         args.execute(self).await
     }
 
-    pub fn new(hostname: impl ToString) -> Self {
+    pub fn new(hostname: impl ToString, jwt: Option<Sensitive<String>>) -> Self {
         Self {
-            inner: Arc::new(ClientImpl {
+            inner: Rc::new(RefCell::new(ClientImpl {
                 hostname: hostname.to_string(),
+                jwt,
                 // client: Client::new(),
-            }),
+            })),
         }
+    }
+
+    pub fn set_jwt(&self, jwt: Option<Sensitive<String>>) {
+        self.inner.borrow_mut().jwt = jwt;
     }
 }
 

@@ -1,9 +1,9 @@
-use capybara_lemmy_client::post::{Post, PostAggregates, PostView};
-use leptos::*;
-use leptos_icons::*;
 use crate::components::{
     community::CommunityBadge, markdown::Markdown, person::PersonView, time::RelativeTime,
 };
+use capybara_lemmy_client::post::{Post, PostAggregates, PostView};
+use leptos::*;
+use leptos_icons::*;
 
 #[component]
 pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {

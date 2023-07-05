@@ -28,7 +28,9 @@ pub struct GetComments {
     pub auth: Option<Sensitive<String>>,
 }
 
-#[derive(EnumString, Display, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(
+    EnumString, Display, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord,
+)]
 /// The comment sort types. See here for descriptions: https://join-lemmy.org/docs/en/users/03-votes-and-ranking.html
 pub enum CommentSortType {
     Hot,

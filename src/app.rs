@@ -1,18 +1,25 @@
-use crate::components::{
-    feed::{post_preview::*, virtual_scroll::InfinitePage},
-    post::Post,
+use crate::{
+    components::{
+        feed::{post_preview::*, virtual_scroll::InfinitePage},
+        post::Post,
+        profile::Profile,
+    },
+    login::Login,
+    settings::Settings,
 };
 use capybara_lemmy_client::{
     post::{GetPosts, ListingType, PostView, SortType},
+    sensitive::Sensitive,
     CapyClient,
 };
 use leptos::leptos_dom::ev::SubmitEvent;
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
+use log::info;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
-use std::{panic};
+use std::panic;
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -26,17 +33,28 @@ struct GreetArgs<'a> {
     name: &'a str,
 }
 
+#[derive(Clone)]
+pub struct CurrentUser(pub RwSignal<Option<Sensitive<String>>>);
+
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
     wasm_logger::init(wasm_logger::Config::default());
-    provide_context(cx, CapyClient::new("https://lemmy.world"));
+    let current_user = Settings::current_login();
+    let jwt = CurrentUser(create_rw_signal(cx, current_user.clone()));
+    info!("{current_user:?}");
+    provide_context(cx, jwt);
+    provide_context(
+        cx,
+        CapyClient::new("https://lemmy.world", current_user.clone()),
+    );
     view! { cx,
         <Body class="bg-neutral-100 dark:bg-neutral-900 text-base dark:text-white"/>
         <main class="container mx-auto px-4">
             <div class="flex flex-row gap-2">
                 <a href="/">"home"</a>
                 <a href="/login">"Login"</a>
+                <Profile />
             </div>
             <Router>
                 <Routes>
@@ -76,7 +94,7 @@ fn PostSort(
     value: Option<SortType>,
     text: &'static str,
     set_sort: WriteSignal<Option<SortType>>,
-    sort_menu_hidden: RwSignal<bool>
+    sort_menu_hidden: RwSignal<bool>,
 ) -> impl IntoView {
     view! { cx,
         <button
@@ -160,16 +178,23 @@ fn TypeMenu(
 }
 
 #[component]
-fn ErrorView<Draw, DrawView, T>(cx: Scope, value: Result<T, leptos::error::Error>, ok: Draw) -> impl IntoView
-where 
-DrawView: IntoView + 'static,
+pub fn ErrorView<Draw, DrawView, T>(
+    cx: Scope,
+    value: Result<T, leptos::error::Error>,
+    ok: Draw,
+) -> impl IntoView
+where
+    DrawView: IntoView + 'static,
     T: 'static + Clone,
-Draw: Fn(T) -> DrawView + 'static,
+    Draw: Fn(T) -> DrawView + 'static,
+{
     {
-        {match value {
+        match value {
             Ok(o) => ok(o.clone()).into_view(cx),
-            Err(e) => format!("Error!\n{e}").into_view(cx)
-        }}.into_view(cx)
+            Err(e) => format!("Error!\n{e}").into_view(cx),
+        }
+    }
+    .into_view(cx)
 }
 
 #[component]
@@ -181,14 +206,15 @@ fn Posts(cx: Scope) -> impl IntoView {
         move || (sort(), type_()),
         move |(sort, type_)| async move {
             let client = use_context::<CapyClient>(cx).expect("need client");
-            
+
             client
                 .execute(GetPosts {
                     sort,
                     type_,
                     ..Default::default()
                 })
-                .await.map_err(leptos::error::Error::from)
+                .await
+                .map_err(leptos::error::Error::from)
         },
     );
     view! { cx,
@@ -201,10 +227,10 @@ fn Posts(cx: Scope) -> impl IntoView {
                 view! { cx, "Loading" }
             }>
                 {move || {
-                    
+
                     posts
                         .with(cx, move |p| {
-                            view!{cx, <ErrorView value=p.clone() ok=move |p| { 
+                            view!{cx, <ErrorView value=p.clone() ok=move |p| {
                                 let posts = p.posts;
                                 let page_size = posts.len();
                                 let sort = sort();
@@ -235,26 +261,6 @@ fn Posts(cx: Scope) -> impl IntoView {
                             })
                 }}
             </Suspense>
-        </div>
-    }
-}
-
-#[component]
-fn Login(cx: Scope) -> impl IntoView {
-    let username = create_rw_signal(cx, "".to_string());
-    let password = create_rw_signal(cx, "".to_string());
-    let instance = create_rw_signal(cx, "".to_string());
-    view! { cx,
-        <div>
-            <form>
-                <label for="username">"username:"</label>
-                <input id="username"/>
-                <label for="password">"password:"</label>
-                <input id="password"/>
-                <label for="instance">"instance:"</label>
-                <input id="instance" on:input=move |_| {}/>
-                <button on:click=move |_| {}>"login"</button>
-            </form>
         </div>
     }
 }

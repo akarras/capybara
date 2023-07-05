@@ -4,4 +4,5 @@ pub mod feed;
 pub mod markdown;
 pub mod person;
 pub mod post;
+pub mod profile;
 pub mod time;

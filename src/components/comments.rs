@@ -1,13 +1,11 @@
 use std::collections::HashMap;
 
 use capybara_lemmy_client::{
-    comment::{Comment, CommentAggregates, CommentId, CommentView, GetComments, CommentSortType},
-    post::{PostId, SortType},
+    comment::{Comment, CommentAggregates, CommentSortType, CommentView, GetComments},
+    post::PostId,
     CapyClient,
 };
-use comrak::{markdown_to_html, ComrakOptions};
 use leptos::*;
-use log::info;
 
 use crate::components::{community::CommunityBadge, markdown::Markdown, person::PersonView};
 
