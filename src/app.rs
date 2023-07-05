@@ -3,7 +3,7 @@ use crate::components::{
     post::Post,
 };
 use capybara_lemmy_client::{
-    post::{GetPost, GetPosts, ListingType, PostView, SortType},
+    post::{GetPosts, ListingType, PostView, SortType},
     CapyClient,
 };
 use leptos::leptos_dom::ev::SubmitEvent;
@@ -12,7 +12,7 @@ use leptos_meta::*;
 use leptos_router::*;
 use serde::{Deserialize, Serialize};
 use serde_wasm_bindgen::to_value;
-use std::panic;
+use std::{panic};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -76,12 +76,14 @@ fn PostSort(
     value: Option<SortType>,
     text: &'static str,
     set_sort: WriteSignal<Option<SortType>>,
+    sort_menu_hidden: RwSignal<bool>
 ) -> impl IntoView {
     view! { cx,
         <button
             class="p-2 rounded bg-red-600 hover:bg-red-800"
             on:click=move |_| {
                 set_sort(value);
+                sort_menu_hidden.set(true);
             }
         >
             {text}
@@ -108,21 +110,21 @@ fn SortMenu(
             {move || format!("{:?}", sort())}
         </button>
         <div class="flex flex-col absolute z-10" class:hidden=sort_menu_hidden>
-            <PostSort value=None text="None" set_sort/>
-            <PostSort value=Some(SortType::Active) text="Active" set_sort/>
-            <PostSort value=Some(SortType::Hot) text="Hot" set_sort/>
-            <PostSort value=Some(SortType::New) text="New" set_sort/>
-            <PostSort value=Some(SortType::Old) text="Old" set_sort/>
-            <PostSort value=Some(SortType::TopDay) text="Top Day" set_sort/>
-            <PostSort value=Some(SortType::TopWeek) text="Top Week" set_sort/>
-            <PostSort value=Some(SortType::TopMonth) text="Top Month" set_sort/>
-            <PostSort value=Some(SortType::TopYear) text="Top Year" set_sort/>
-            <PostSort value=Some(SortType::TopAll) text="Top All" set_sort/>
-            <PostSort value=Some(SortType::MostComments) text="Most Comments" set_sort/>
-            <PostSort value=Some(SortType::NewComments) text="New Comments" set_sort/>
-            <PostSort value=Some(SortType::TopHour) text="Top Hour" set_sort/>
-            <PostSort value=Some(SortType::TopSixHour) text="Top 6 Hour" set_sort/>
-            <PostSort value=Some(SortType::TopTwelveHour) text="Top 12 Hour" set_sort/>
+            <PostSort value=None text="None" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::Active) text="Active" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::Hot) text="Hot" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::New) text="New" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::Old) text="Old" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::TopDay) text="Top Day" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::TopWeek) text="Top Week" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::TopMonth) text="Top Month" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::TopYear) text="Top Year" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::TopAll) text="Top All" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::MostComments) text="Most Comments" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::NewComments) text="New Comments" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::TopHour) text="Top Hour" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::TopSixHour) text="Top 6 Hour" set_sort sort_menu_hidden />
+            <PostSort value=Some(SortType::TopTwelveHour) text="Top 12 Hour" set_sort sort_menu_hidden />
         </div>
         </div>
     }
@@ -158,6 +160,19 @@ fn TypeMenu(
 }
 
 #[component]
+fn ErrorView<Draw, DrawView, T>(cx: Scope, value: Result<T, leptos::error::Error>, ok: Draw) -> impl IntoView
+where 
+DrawView: IntoView + 'static,
+    T: 'static + Clone,
+Draw: Fn(T) -> DrawView + 'static,
+    {
+        {match value {
+            Ok(o) => ok(o.clone()).into_view(cx),
+            Err(e) => format!("Error!\n{e}").into_view(cx)
+        }}.into_view(cx)
+}
+
+#[component]
 fn Posts(cx: Scope) -> impl IntoView {
     let (sort, set_sort) = create_signal(cx, None);
     let (type_, set_type) = create_signal(cx, None);
@@ -166,21 +181,19 @@ fn Posts(cx: Scope) -> impl IntoView {
         move || (sort(), type_()),
         move |(sort, type_)| async move {
             let client = use_context::<CapyClient>(cx).expect("need client");
-            Some(
-                client
-                    .execute(GetPosts {
-                        sort,
-                        type_,
-                        ..Default::default()
-                    })
-                    .await
-                    .unwrap(),
-            )
+            
+            client
+                .execute(GetPosts {
+                    sort,
+                    type_,
+                    ..Default::default()
+                })
+                .await.map_err(leptos::error::Error::from)
         },
     );
     view! { cx,
-        <div>
-            <div class="flex flex-row">
+        <div class="flex flex-col">
+            <div class="flex flex-row sticky h-10">
                 <SortMenu sort set_sort />
                 <TypeMenu type_ set_type />
             </div>
@@ -188,14 +201,14 @@ fn Posts(cx: Scope) -> impl IntoView {
                 view! { cx, "Loading" }
             }>
                 {move || {
-                    let sort = sort();
-                    let type_ = type_();
+                    
                     posts
-                        .read(cx)
-                        .map(|post| {
-                            post.map(|p| {
+                        .with(cx, move |p| {
+                            view!{cx, <ErrorView value=p.clone() ok=move |p| { 
                                 let posts = p.posts;
                                 let page_size = posts.len();
+                                let sort = sort();
+                                let type_ = type_();
                                 view! { cx,
                                     <InfinitePage
                                         get_page=move |page| async move {
@@ -218,9 +231,8 @@ fn Posts(cx: Scope) -> impl IntoView {
                                         initial_data=posts
                                         page_size
                                     />
-                                }
+                                }}/>}
                             })
-                        })
                 }}
             </Suspense>
         </div>

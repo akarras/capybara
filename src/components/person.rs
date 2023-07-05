@@ -27,10 +27,13 @@ pub fn PersonView(cx: Scope, person: Person) -> impl IntoView {
                 .map(|a| {
                     view! { cx, <img class="w-6 h-6 rounded-full p-r-2" src=a.to_string()/> }
                 })}
-            <div class="font-lg flex flex-row">
+            <div class="group font-lg flex flex-row">
                 {name} {(!local)
                     .then(|| {
-                        view! { cx, <div class="italic">"@" {actor_id.host_str().unwrap_or_default().to_string()}</div> }
+                        view! { cx, <div class="italic">"@" {actor_id.host_str().unwrap_or_default().to_string()}</div>
+                        {admin.then(|| view!{cx, <div class="bg-red-700 rounded p-1">"admin"</div>})}
+                        {banned.then(|| view!{cx, <div class="bg-red-900 rounded p-1">"banned"</div>})}
+                        }
                     })}
             </div>
         </a>

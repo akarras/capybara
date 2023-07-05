@@ -45,7 +45,7 @@ where
         scroller,
         UseScrollOptions::default().offset(ScrollOffset {
             top: 0.0,
-            bottom: 250.0,
+            bottom: 1000.0,
             right: 0.0,
             left: 0.0,
         }),
@@ -66,15 +66,14 @@ where
     };
     let at_bottom = create_memo(cx, move |_| arrived_state().bottom);
     create_effect(cx, move |_| {
-        info!("{} {} {} {}", hydrating(), at_bottom(), is_scrolling(), y());
         if !hydrating() && at_bottom() {
             hydrate();
         }
     });
 
     view! {cx,
-    <div class="max-h-screen overflow-y-auto" node_ref=scroller>
-        <button class="bg-gray-700 px-10 text-3xl absolute bottom-10 right-10 rounded-md" on:click=move |_| {
+    <div class="max-h-screen flex-auto overflow-y-auto h-[calc(100vh-74px)]" node_ref=scroller>
+        <button class="bg-gray-700 px-2 text-lg absolute bottom-10 right-10 rounded-md" on:click=move |_| {
             set_y(0.0);
         }>"Back to top"</button>
         <For

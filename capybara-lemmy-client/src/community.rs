@@ -85,7 +85,7 @@ pub struct Community {
     pub banner: Option<Url>,
     #[serde(skip_serializing)]
     pub followers_url: Option<Url>,
-    #[serde(skip_serializing)]
+    #[serde(skip)]
     pub inbox_url: Option<Url>,
     #[serde(skip)]
     pub shared_inbox_url: Option<Url>,

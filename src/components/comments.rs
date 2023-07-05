@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 
 use capybara_lemmy_client::{
-    comment::{Comment, CommentAggregates, CommentId, CommentView, GetComments},
-    post::PostId,
+    comment::{Comment, CommentAggregates, CommentId, CommentView, GetComments, CommentSortType},
+    post::{PostId, SortType},
     CapyClient,
 };
 use comrak::{markdown_to_html, ComrakOptions};
@@ -107,15 +107,15 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
         hot_rank,
     } = counts;
     view! { cx,
-        <div class="border-l-red-300 border-l-2 bg-gray-900 m-4">
-            <div class="flex flex-row">
+        <div class="border-l-red-300 border-l-2 bg-gray-900 p-4">
+            <div class="flex flex-row gap-2">
+                <div class="p-1 rounded bg-gray-200 hover:bg-gray-600 broder-1 border-gray-200" on:click=move |_| { set_collapsed(!collapsed())}>{move || if collapsed() { "+" } else { "-" }}</div>
                 <div>{child_count}" comments"</div>
-                <div>{upvotes}" u"</div>
-                <div>{score}" s"</div>
-                <div>{downvotes}" d"</div>
-                <div on:click=move |_| { set_collapsed(!collapsed())}>{move || if collapsed() { "show" } else { "hide" }}</div>
+                <div>{score}" score "</div>
+                <div>{upvotes}"⬆️"</div>
+                <div>{downvotes}"⬇️"</div>
             </div>
-            <div class="flex flex-col" class:hidden=collapsed>
+            <div class="flex flex-col transition" class:hidden=collapsed>
                 <div class="flex flex-row">
                     <PersonView person=creator/>
                     <CommunityBadge community />
@@ -134,14 +134,17 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
 
 #[component]
 pub fn PostComments(cx: Scope, post_id: PostId) -> impl IntoView {
+    let (sort, set_sort) = create_signal(cx, CommentSortType::Hot);
     let post_comments = create_resource(
         cx,
-        move || {},
-        move |_| async move {
+        move || sort(),
+        move |sort| async move {
             let client = use_context::<CapyClient>(cx).unwrap();
             let comments = client
                 .execute(GetComments {
                     post_id: Some(post_id),
+                    sort: Some(sort),
+                    limit: Some(100),
                     ..Default::default()
                 })
                 .await

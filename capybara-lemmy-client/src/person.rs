@@ -36,8 +36,8 @@ pub struct Person {
     pub banner: Option<Url>,
     /// Whether the person is deleted.
     pub deleted: bool,
-    #[serde(skip_serializing)]
-    pub inbox_url: Url,
+    #[serde(skip)]
+    pub inbox_url: Option<Url>,
     #[serde(skip)]
     pub shared_inbox_url: Option<Url>,
     /// A matrix id, usually given an @person:matrix.org
