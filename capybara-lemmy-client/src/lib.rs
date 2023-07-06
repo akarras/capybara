@@ -3,7 +3,9 @@ use std::{cell::RefCell, rc::Rc};
 use crate::error::Result;
 use async_trait::async_trait;
 use comment::{GetComments, GetCommentsResponse};
-use community::{CommunityResponse, FollowCommunity, ListCommunities, ListCommunitiesResponse};
+use community::{
+    CommunityResponse, FollowCommunity, GetCommunity, ListCommunities, ListCommunitiesResponse,
+};
 use error::ClientError;
 use log::info;
 use person::{GetPersonDetails, GetPersonDetailsResponse, Login, LoginResponse};
@@ -297,6 +299,23 @@ impl LemmyRequest for FollowCommunity {
 
     fn get_http_mode() -> HttpMode {
         HttpMode::POST
+    }
+}
+
+impl LemmyRequest for GetCommunity {
+    type Response = CommunityResponse;
+
+    fn get_path() -> &'static str {
+        "/community"
+    }
+
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()> {
+        self.auth = jwt;
+        Ok(())
+    }
+
+    fn get_http_mode() -> HttpMode {
+        HttpMode::GET
     }
 }
 

@@ -7,5 +7,6 @@ pub mod person;
 pub mod post;
 pub mod profile;
 pub mod show_more;
+pub mod sorting_components;
 pub mod subscribe;
 pub mod time;

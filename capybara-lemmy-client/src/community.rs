@@ -64,6 +64,16 @@ pub struct CommunityView {
     pub counts: CommunityAggregates,
 }
 
+#[skip_serializing_none]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+/// Get a community. Must provide either an id, or a name.
+pub struct GetCommunity {
+    pub id: Option<CommunityId>,
+    /// Example: star_trek , or star_trek@xyz.tld
+    pub name: Option<String>,
+    pub auth: Option<Sensitive<String>>,
+}
+
 #[derive(Debug, Serialize, Deserialize, Clone)]
 /// A community moderator.
 pub struct CommunityModeratorView {

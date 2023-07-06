@@ -8,7 +8,10 @@ use leptos::*;
 use crate::{
     app::ErrorView,
     components::{
-        community::CommunityBadge, feed::virtual_scroll::InfinitePage, numbers::NumberVis,
+        community::CommunityBadge,
+        feed::virtual_scroll::InfinitePage,
+        numbers::NumberVis,
+        sorting_components::{SortMenu, TypeMenu},
         subscribe::SubscribeButton,
     },
 };
@@ -56,11 +59,11 @@ pub fn CommunityView(cx: Scope, community: CommunityView) -> impl IntoView {
 #[component]
 pub fn CommunityList(cx: Scope) -> impl IntoView {
     let (show_nsfw, set_show_nsfw) = create_signal(cx, None);
-    let (sort_type, set_sort_type) = create_signal(cx, Some(SortType::TopAll));
+    let (sort, set_sort) = create_signal(cx, Some(SortType::TopAll));
     let (type_, set_type) = create_signal(cx, None);
     let communities = create_local_resource(
         cx,
-        move || (show_nsfw(), type_(), sort_type()),
+        move || (show_nsfw(), type_(), sort()),
         move |(show_nsfw, type_, sort)| async move {
             let client = use_context::<CapyClient>(cx).unwrap();
             client
@@ -76,6 +79,19 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
     );
     view! { cx,
         <div>
+            <SortMenu sort set_sort />
+            <TypeMenu type_ set_type />
+            <button class="p-1 bg-neutral-800 hover:bg-neutral-600" on:click=move |_| {
+                set_show_nsfw(match show_nsfw.get_untracked() {
+                    Some(true) => Some(false),
+                    Some(false) => None,
+                    None => Some(true)
+                })
+            }>{move || match show_nsfw() {
+                Some(true) => "nsfw only",
+                Some(false) => "no nsfw",
+                None => "nsfw filter not set"
+            }}</button>
             <Suspense fallback=move || {
                 view! { cx, "Loading" }
             }>
@@ -94,7 +110,7 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
                                                         let client = use_context::<CapyClient>(cx).unwrap();
                                                         let show_nsfw = show_nsfw.get_untracked();
                                                         let type_ = type_.get_untracked();
-                                                        let sort = sort_type.get_untracked();
+                                                        let sort = sort.get_untracked();
                                                         client
                                                             .execute(ListCommunities {
                                                                 show_nsfw,
