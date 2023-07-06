@@ -20,7 +20,7 @@ use leptos_meta::*;
 use leptos_router::*;
 use log::info;
 use serde::{Deserialize, Serialize};
-use std::panic;
+use std::{ops::Deref, panic};
 use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen]
@@ -34,27 +34,45 @@ struct GreetArgs<'a> {
     name: &'a str,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct CurrentUser(pub RwSignal<Option<LoginInfo>>);
+
+impl Deref for CurrentUser {
+    type Target = RwSignal<Option<LoginInfo>>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
     wasm_logger::init(wasm_logger::Config::default());
-    let current_user = Settings::current_login();
-    let jwt = CurrentUser(create_rw_signal(cx, current_user.clone()));
-    info!("{current_user:?}");
-    provide_context(cx, jwt);
+    let jwt = Settings::current_login();
+    let current_user = CurrentUser(create_rw_signal(cx, jwt.clone()));
+    info!("{jwt:?}");
+    provide_context(cx, current_user);
     provide_context(
         cx,
         CapyClient::new(
             current_user
-                .as_ref()
+                .0
+                .get_untracked()
                 .map(|u| u.instance.to_string())
                 .unwrap_or("https://lemmy.world".to_string()),
-            current_user.map(|user| user.jwt.clone()),
+            current_user.0.get_untracked().map(|user| user.jwt.clone()),
         ),
     );
+    create_effect(cx, move |_| {
+        let user = current_user();
+        Settings::set_current_login(user.clone());
+        let client = use_context::<CapyClient>(cx).unwrap();
+        if let Some(user) = &user {
+            client.set_instance(user.instance.to_string());
+        }
+        client.set_jwt(user.map(|u| u.jwt));
+    });
     view! { cx,
         <Body class="bg-neutral-100 dark:bg-neutral-900 text-base dark:text-white"/>
         <main class="container mx-auto px-4">
@@ -62,7 +80,29 @@ pub fn App(cx: Scope) -> impl IntoView {
                 <a href="/">"home"</a>
                 <a href="/login">"Login"</a>
                 <a href="/communities">"Communities"</a>
-                <Profile />
+                <Profile/>
+                {move || {
+                    let mut logins = Settings::get_logins();
+                    logins.retain(|l| !current_user.0().map(|r| r == *l).unwrap_or_default());
+                    logins
+                        .into_iter()
+                        .map(|login| {
+                            let login_value = login.clone();
+                            view! { cx,
+                                <button
+                                    class="bg-neutral-800 p-2 rounded"
+                                    on:click=move |_| {
+                                        current_user.0.set(Some(login_value.clone()));
+                                    }
+                                >
+                                    {login.username}
+                                    "@"
+                                    {login.instance}
+                                </button>
+                            }
+                        })
+                        .collect::<Vec<_>>()
+                }}
             </div>
             <Router>
                 <Routes>
@@ -78,8 +118,18 @@ pub fn App(cx: Scope) -> impl IntoView {
                             view! { cx, <Post/> }
                         }
                     />
-                    <Route path="/communities" view=move |cx| {view!{cx, <CommunityList />}} />
-                    <Route path="/c/:community" view=move |cx| {view!{cx, <Community />}} />
+                    <Route
+                        path="/communities"
+                        view=move |cx| {
+                            view! { cx, <CommunityList/> }
+                        }
+                    />
+                    <Route
+                        path="/c/:community"
+                        view=move |cx| {
+                            view! { cx, <Community/> }
+                        }
+                    />
                     <Route
                         path="/"
                         view=move |cx| {
@@ -122,10 +172,11 @@ where
 fn Posts(cx: Scope) -> impl IntoView {
     let (sort, set_sort) = create_signal(cx, None);
     let (type_, set_type) = create_signal(cx, None);
+    let user = use_context::<CurrentUser>(cx).unwrap();
     let posts = create_local_resource(
         cx,
-        move || (sort(), type_()),
-        move |(sort, type_)| async move {
+        move || (sort(), type_(), user.0()),
+        move |(sort, type_, _)| async move {
             let client = use_context::<CapyClient>(cx).expect("need client");
 
             client
@@ -141,43 +192,51 @@ fn Posts(cx: Scope) -> impl IntoView {
     view! { cx,
         <div class="flex flex-col">
             <div class="flex flex-row sticky h-10">
-                <SortMenu sort set_sort />
-                <TypeMenu type_ set_type />
+                <SortMenu sort set_sort/>
+                <TypeMenu type_ set_type/>
             </div>
             <Suspense fallback=move || {
                 view! { cx, "Loading" }
             }>
                 {move || {
-
                     posts
-                        .with(cx, move |p| {
-                            view!{cx, <ErrorView value=p.clone() ok=move |p| {
-                                let posts = p.posts;
-                                let sort = sort();
-                                let type_ = type_();
+                        .with(
+                            cx,
+                            move |p| {
                                 view! { cx,
-                                    <InfinitePage
-                                        get_page=move |page| async move {
-                                            let client = use_context::<CapyClient>(cx).expect("need client");
-                                            client
-                                                .execute(GetPosts {
-                                                    page: Some(page as i64),
-                                                    type_,
-                                                    sort,
-                                                    ..Default::default()
-                                                })
-                                                .await
-                                                .unwrap()
-                                                .posts
+                                    <ErrorView
+                                        value=p.clone()
+                                        ok=move |p| {
+                                            let posts = p.posts;
+                                            let sort = sort();
+                                            let type_ = type_();
+                                            view! { cx,
+                                                <InfinitePage
+                                                    get_page=move |page| async move {
+                                                        let client = use_context::<CapyClient>(cx).expect("need client");
+                                                        client
+                                                            .execute(GetPosts {
+                                                                page: Some(page as i64),
+                                                                type_,
+                                                                sort,
+                                                                ..Default::default()
+                                                            })
+                                                            .await
+                                                            .unwrap()
+                                                            .posts
+                                                    }
+                                                    key=move |p: &PostView| p.post.id
+                                                    view=move |cx, post| {
+                                                        view! { cx, <PostPreview post/> }
+                                                    }
+                                                    initial_data=posts
+                                                />
+                                            }
                                         }
-                                        key=move |p: &PostView| p.post.id
-                                        view=move |cx, post| {
-                                            view! { cx, <PostPreview post/> }
-                                        }
-                                        initial_data=posts
                                     />
-                                }}/>}
-                            })
+                                }
+                            },
+                        )
                 }}
             </Suspense>
         </div>

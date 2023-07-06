@@ -6,7 +6,7 @@ use capybara_lemmy_client::{
 use leptos::*;
 
 use crate::{
-    app::ErrorView,
+    app::{CurrentUser, ErrorView},
     components::{
         community::CommunityBadge,
         feed::virtual_scroll::InfinitePage,
@@ -61,10 +61,11 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
     let (show_nsfw, set_show_nsfw) = create_signal(cx, None);
     let (sort, set_sort) = create_signal(cx, Some(SortType::TopAll));
     let (type_, set_type) = create_signal(cx, None);
+    let current_user = use_context::<CurrentUser>(cx).unwrap();
     let communities = create_local_resource(
         cx,
-        move || (show_nsfw(), type_(), sort()),
-        move |(show_nsfw, type_, sort)| async move {
+        move || (show_nsfw(), type_(), sort(), current_user()),
+        move |(show_nsfw, type_, sort, _)| async move {
             let client = use_context::<CapyClient>(cx).unwrap();
             client
                 .execute(ListCommunities {

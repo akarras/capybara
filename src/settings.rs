@@ -32,6 +32,10 @@ impl Settings {
         LocalStorage::set("logins", logins).unwrap();
     }
 
+    pub fn set_current_login(login: Option<LoginInfo>) {
+        LocalStorage::set("current_login", login).unwrap();
+    }
+
     pub fn current_login() -> Option<LoginInfo> {
         LocalStorage::get("current_login").ok()
     }
