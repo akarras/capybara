@@ -5,7 +5,7 @@ use capybara_lemmy_client::{
 };
 use leptos::*;
 
-use crate::{app::ErrorView, components::feed::virtual_scroll::InfinitePage};
+use crate::{app::ErrorView, components::{feed::virtual_scroll::InfinitePage, community::CommunityBadge}};
 
 #[component]
 pub fn CommunityView(cx: Scope, community: CommunityView) -> impl IntoView {
@@ -29,18 +29,23 @@ pub fn CommunityView(cx: Scope, community: CommunityView) -> impl IntoView {
         hot_rank,
     } = counts;
     view! { cx,
-    <div class="flex flex-row p-5 border-4 border-neutral-700 bg-neutral-800 text-neutral-100">
-        <div>{community.name}{community.nsfw.then(|| view!{cx, <div class="p-1 bg-red-600 rounded">"nsfw"</div>})}</div>
-        <div>{subscribed.to_string()}</div>
-        <div>{posts}" posts"</div>
-        <div>{comments}" comments"</div>
+    <div class="flex flex-row p-5 border-4 border-neutral-700 bg-neutral-800 text-neutral-100 gap-5">
+        <div class="flex flex-col">
+        <CommunityBadge community />
+        // <div>{community.name}{community.nsfw.then(|| view!{cx, <div class="p-1 bg-red-600 rounded">"nsfw"</div>})}</div>
+        
+            <div>{subscribers}" subscribers"</div>
+            <div>{posts}" posts"</div>
+            <div>{comments}" comments"</div>
+        </div>
         <div class="flex flex-col">
             <div>{users_active_day}" daily active users"</div>
             <div>{users_active_week}" weekly active users"</div>
             <div>{users_active_month}" monthly active users"</div>
             <div>{users_active_half_year}" half year active users"</div>
-            <div>{hot_rank}" hot rank"</div>
+            
         </div>
+        <div>{subscribed.to_string()}</div>
     </div> }
 }
 
@@ -52,7 +57,7 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
     let communities = create_local_resource(
         cx,
         move || (show_nsfw(), type_(), sort_type()),
-        move |((show_nsfw, type_, sort))| async move {
+        move |(show_nsfw, type_, sort)| async move {
             let client = use_context::<CapyClient>(cx).unwrap();
             client
                 .execute(ListCommunities {
