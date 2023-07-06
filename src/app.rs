@@ -1,4 +1,5 @@
 use crate::{
+    community_list::CommunityList,
     components::{
         feed::{post_preview::*, virtual_scroll::InfinitePage},
         post::Post,
@@ -52,6 +53,7 @@ pub fn App(cx: Scope) -> impl IntoView {
             <div class="flex flex-row gap-2">
                 <a href="/">"home"</a>
                 <a href="/login">"Login"</a>
+                <a href="/communities">"Communities"</a>
                 <Profile />
             </div>
             <Router>
@@ -68,6 +70,7 @@ pub fn App(cx: Scope) -> impl IntoView {
                             view! { cx, <Post/> }
                         }
                     />
+                    <Route path="/communities" view=move |cx| {view!{cx, <CommunityList />}} />
                     <Route
                         path="/"
                         view=move |cx| {

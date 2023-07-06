@@ -1,4 +1,5 @@
 mod app;
+pub mod community_list;
 pub mod components;
 pub mod login;
 pub mod settings;

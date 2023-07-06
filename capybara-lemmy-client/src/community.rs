@@ -1,4 +1,9 @@
-use crate::{instance::InstanceId, person::Person};
+use crate::{
+    instance::InstanceId,
+    person::Person,
+    post::{ListingType, SortType},
+    sensitive::Sensitive,
+};
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
 use strum::{Display, EnumString};
@@ -100,4 +105,22 @@ pub struct Community {
     /// Url where featured posts collection is served over Activitypub
     #[serde(skip)]
     pub featured_url: Option<Url>,
+}
+
+#[skip_serializing_none]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+/// Fetches a list of communities.
+pub struct ListCommunities {
+    pub type_: Option<ListingType>,
+    pub sort: Option<SortType>,
+    pub show_nsfw: Option<bool>,
+    pub page: Option<i64>,
+    pub limit: Option<i64>,
+    pub auth: Option<Sensitive<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+/// The response for listing communities.
+pub struct ListCommunitiesResponse {
+    pub communities: Vec<CommunityView>,
 }
