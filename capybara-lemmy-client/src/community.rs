@@ -1,7 +1,7 @@
 use crate::{
     instance::InstanceId,
     person::Person,
-    post::{ListingType, SortType},
+    post::{LanguageId, ListingType, SortType},
     sensitive::Sensitive,
 };
 use serde::{Deserialize, Serialize};
@@ -38,6 +38,21 @@ pub struct CommunityAggregates {
     /// The number of users with any activity in the last year.
     pub users_active_half_year: i64,
     pub hot_rank: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+/// Follow / subscribe to a community.
+pub struct FollowCommunity {
+    pub community_id: CommunityId,
+    pub follow: bool,
+    pub auth: Sensitive<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+/// A simple community response.
+pub struct CommunityResponse {
+    pub community_view: CommunityView,
+    pub discussion_languages: Vec<LanguageId>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

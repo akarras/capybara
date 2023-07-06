@@ -5,7 +5,13 @@ use capybara_lemmy_client::{
 };
 use leptos::*;
 
-use crate::{app::ErrorView, components::{feed::virtual_scroll::InfinitePage, community::CommunityBadge}};
+use crate::{
+    app::ErrorView,
+    components::{
+        community::CommunityBadge, feed::virtual_scroll::InfinitePage, numbers::NumberVis,
+        subscribe::SubscribeButton,
+    },
+};
 
 #[component]
 pub fn CommunityView(cx: Scope, community: CommunityView) -> impl IntoView {
@@ -29,24 +35,22 @@ pub fn CommunityView(cx: Scope, community: CommunityView) -> impl IntoView {
         hot_rank,
     } = counts;
     view! { cx,
-    <div class="flex flex-row p-5 border-4 border-neutral-700 bg-neutral-800 text-neutral-100 gap-5">
-        <div class="flex flex-col">
-        <CommunityBadge community />
-        // <div>{community.name}{community.nsfw.then(|| view!{cx, <div class="p-1 bg-red-600 rounded">"nsfw"</div>})}</div>
-        
-            <div>{subscribers}" subscribers"</div>
-            <div>{posts}" posts"</div>
-            <div>{comments}" comments"</div>
+        <div class="flex flex-row p-5 border-4 border-neutral-700 bg-neutral-800 text-neutral-100 gap-5">
+            <div class="flex flex-col">
+                <CommunityBadge community/>
+                <div><NumberVis value=subscribers/>" subscribers"</div>
+                <div><NumberVis value=posts/>" posts"</div>
+                <div><NumberVis value=comments/> " comments"</div>
+            </div>
+            <div class="flex flex-col">
+                <div><NumberVis value=users_active_day/>" daily active users"</div>
+                <div><NumberVis value=users_active_week/>" weekly active users"</div>
+                <div><NumberVis value=users_active_month/> " monthly active users"</div>
+                <div><NumberVis value=users_active_half_year/> " half year active users"</div>
+            </div>
+            <SubscribeButton community_id subscribe=subscribed />
         </div>
-        <div class="flex flex-col">
-            <div>{users_active_day}" daily active users"</div>
-            <div>{users_active_week}" weekly active users"</div>
-            <div>{users_active_month}" monthly active users"</div>
-            <div>{users_active_half_year}" half year active users"</div>
-            
-        </div>
-        <div>{subscribed.to_string()}</div>
-    </div> }
+    }
 }
 
 #[component]
@@ -85,25 +89,30 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
                                     ok=move |communities| {
                                         view! { cx,
                                             <InfinitePage
-                                                get_page=move |page| {async move {
-                                                    let client = use_context::<CapyClient>(cx).unwrap();
-                                                    let show_nsfw = show_nsfw.get_untracked();
-                                                    let type_ = type_.get_untracked();
-                                                    let sort = sort_type.get_untracked();
-                                                    client
-                                                        .execute(ListCommunities {
-                                                            show_nsfw,
-                                                            type_,
-                                                            sort,
-                                                            page: Some(page as i64),
-                                                            ..Default::default()
-                                                        })
-                                                        .await.ok().map(|c| c.communities).unwrap_or_default()
-                                                }}
+                                                get_page=move |page| {
+                                                    async move {
+                                                        let client = use_context::<CapyClient>(cx).unwrap();
+                                                        let show_nsfw = show_nsfw.get_untracked();
+                                                        let type_ = type_.get_untracked();
+                                                        let sort = sort_type.get_untracked();
+                                                        client
+                                                            .execute(ListCommunities {
+                                                                show_nsfw,
+                                                                type_,
+                                                                sort,
+                                                                page: Some(page as i64),
+                                                                ..Default::default()
+                                                            })
+                                                            .await
+                                                            .ok()
+                                                            .map(|c| c.communities)
+                                                            .unwrap_or_default()
+                                                    }
+                                                }
                                                 initial_data=communities.communities
                                                 key=|c| c.community.id
                                                 view=|cx, community| {
-                                                    view!{cx, <CommunityView community />}
+                                                    view! { cx, <CommunityView community/> }
                                                 }
                                             />
                                         }
