@@ -341,6 +341,10 @@ impl CapyClient {
     pub fn set_jwt(&self, jwt: Option<Sensitive<String>>) {
         self.inner.borrow_mut().jwt = jwt;
     }
+
+    pub fn set_instance(&self, instance: String) {
+        self.inner.borrow_mut().hostname = instance;
+    }
 }
 
 // #[cfg(test)]

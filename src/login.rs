@@ -2,13 +2,13 @@ use capybara_lemmy_client::{person::Login as LemmyLogin, sensitive::Sensitive, C
 use leptos::*;
 use leptos_router::{use_navigate, NavigateOptions};
 
-use crate::settings::Settings;
+use crate::settings::{LoginInfo, Settings};
 
 #[component]
 pub(crate) fn Login(cx: Scope) -> impl IntoView {
     let username = create_rw_signal(cx, "".to_string());
     let password = create_rw_signal(cx, "".to_string());
-    let instance = create_rw_signal(cx, "".to_string());
+    let instance = create_rw_signal(cx, "https://".to_string());
     let two_factor = create_rw_signal(cx, None);
     view! { cx,
         <div class="p-4 dark:bg-gray-800">
@@ -59,10 +59,15 @@ pub(crate) fn Login(cx: Scope) -> impl IntoView {
                         };
                         spawn_local(async move {
                             let client = use_context::<CapyClient>(cx).unwrap();
+                            client.set_instance(instance.get_untracked());
                             let login = client.execute(login_request).await.unwrap();
-                            let jwt = login.jwt;
-
-                            Settings::set_login(cx, jwt.clone());
+                            let jwt = login.jwt.unwrap();
+                            let login = LoginInfo {
+                                jwt,
+                                instance: instance.get_untracked(),
+                                username: username.get_untracked()
+                            };
+                            Settings::create_login(cx, login);
                             log!("logged in!");
                             let navigate = use_navigate(cx);
                             navigate("/", NavigateOptions::default()).unwrap();

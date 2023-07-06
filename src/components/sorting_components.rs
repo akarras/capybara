@@ -70,7 +70,7 @@ fn PostSort(
 ) -> impl IntoView {
     view! { cx,
         <button
-            class="bg-neutral-800 hover:bg-neutral-800"
+            class="bg-neutral-800 hover:bg-neutral-600"
             on:click=move |_| {
                 set_sort(value);
                 sort_menu_hidden.set(true);

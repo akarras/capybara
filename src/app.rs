@@ -8,7 +8,7 @@ use crate::{
         sorting_components::{SortMenu, TypeMenu},
     },
     login::Login,
-    settings::Settings,
+    settings::{LoginInfo, Settings},
 };
 use capybara_lemmy_client::{
     post::{GetPosts, PostView},
@@ -35,7 +35,7 @@ struct GreetArgs<'a> {
 }
 
 #[derive(Clone)]
-pub struct CurrentUser(pub RwSignal<Option<Sensitive<String>>>);
+pub struct CurrentUser(pub RwSignal<Option<LoginInfo>>);
 
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
@@ -47,7 +47,13 @@ pub fn App(cx: Scope) -> impl IntoView {
     provide_context(cx, jwt);
     provide_context(
         cx,
-        CapyClient::new("https://lemmy.world", current_user.clone()),
+        CapyClient::new(
+            current_user
+                .as_ref()
+                .map(|u| u.instance.to_string())
+                .unwrap_or("https://lemmy.world".to_string()),
+            current_user.map(|user| user.jwt.clone()),
+        ),
     );
     view! { cx,
         <Body class="bg-neutral-100 dark:bg-neutral-900 text-base dark:text-white"/>
