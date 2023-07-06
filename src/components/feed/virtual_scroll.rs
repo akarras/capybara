@@ -1,6 +1,6 @@
 use leptos::*;
 use leptos_use::{use_scroll_with_options, ScrollOffset, UseScrollOptions, UseScrollReturn};
-use std::{future::Future, hash::Hash};
+use std::{collections::HashSet, future::Future, hash::Hash};
 use web_sys::HtmlDivElement;
 
 #[component]
@@ -15,7 +15,7 @@ where
     P: Fn(usize) -> PFut + 'static + Copy,
     PFut: Future<Output = Vec<T>>,
     T: 'static + Clone,
-    KF: Fn(&T) -> K + 'static,
+    KF: Fn(&T) -> K + 'static + Copy,
     K: Eq + Hash + 'static,
     VF: Fn(Scope, T) -> V + 'static,
     V: IntoView,
@@ -24,6 +24,7 @@ where
     let data = create_rw_signal(cx, initial_data);
     let (hydrating, set_hydrating) = create_signal(cx, false);
     let current_page = create_rw_signal(cx, 1);
+    let (at_end, set_at_end) = create_signal(cx, false);
     let UseScrollReturn {
         set_y,
         arrived_state,
@@ -39,14 +40,19 @@ where
         }),
     );
     let hydrate = move || {
-        if !hydrating.get_untracked() {
+        if !hydrating.get_untracked() && !at_end.get_untracked() {
             set_hydrating(true);
             spawn_local(async move {
                 current_page.update(|p| *p += 1);
                 let page = current_page.get_untracked();
                 let new_data = get_page(page as usize).await;
+                if new_data.is_empty() {
+                    set_at_end(true);
+                }
                 data.update(|data| {
                     data.extend(new_data);
+                    let mut dedup = HashSet::new();
+                    data.retain(|post| dedup.insert(key(post)));
                 });
                 set_hydrating(false);
             });
@@ -71,9 +77,10 @@ where
         />
 
         {move || hydrating().then(|| view!{cx, "Loading!"})}
-        {move || (!hydrating()).then(|| view!{cx, <button class="bg-gray-300 rounded px-3" on:click=move |_| {
+        {move || (!hydrating() && !at_end()).then(|| view!{cx, <button class="bg-gray-300 rounded px-3" on:click=move |_| {
             hydrate();
         }>"load more"</button>})}
+        {move || at_end().then(|| view!{cx, "Wow, you're at the end!"})}
 
     </div>}
 }

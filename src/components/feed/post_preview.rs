@@ -1,5 +1,6 @@
 use crate::components::{
-    community::CommunityBadge, markdown::Markdown, person::PersonView, time::RelativeTime,
+    community::CommunityBadge, markdown::Markdown, person::PersonView, show_more::ShowMore,
+    time::RelativeTime,
 };
 use capybara_lemmy_client::{
     post::{CreatePostLike, Post, PostAggregates, PostView},
@@ -8,6 +9,47 @@ use capybara_lemmy_client::{
 use leptos::*;
 use leptos_icons::*;
 use log::info;
+use serde::Serialize;
+
+/// Tries to get an embed from known websites
+#[component]
+fn MagicEmbed(cx: Scope, url: String) -> impl IntoView {
+    if url.starts_with("https://redgifs.com/watch")
+        || url.starts_with("https://www.redgifs.com/watch")
+    {
+        let video_id = url.split("/").last();
+        video_id.map(|video_id| { view!{cx, <iframe src=format!("https://www.redgifs.com/ifr/{video_id}") frameborder="0" scrolling="no" allowfullscreen class="object-scale-down h-96 aspect-video"></iframe><p><a href=format!("https://www.redgifs.com/watch/{video_id}")>"via RedGIFs"</a></p>}}).into_view(cx)
+    } else {
+        {}.into_view(cx)
+    };
+}
+
+fn is_image(url: &str) -> bool {
+    url.ends_with(".png")
+        || url.ends_with(".webp")
+        || url.ends_with(".jpeg")
+        || url.ends_with(".webm")
+        || url.ends_with(".jpg")
+}
+
+#[derive(Serialize)]
+enum ImageType {
+    #[serde(rename = "webp")]
+    Webp,
+    #[serde(rename = "jpeg")]
+    Jpeg,
+    #[serde(rename = "png")]
+    Png,
+}
+
+#[derive(Serialize)]
+struct ImageDetails {
+    format: ImageType,
+    thumbnail: u32,
+}
+
+#[component]
+fn LemmyImage(cx: Scope, thumbnail: Option<String>, link: Option<String>) -> impl IntoView {}
 
 #[component]
 pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
@@ -30,7 +72,6 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
         score,
         upvotes,
         downvotes,
-        published,
         newest_comment_time_necro,
         newest_comment_time,
         featured_community,
@@ -86,11 +127,27 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
         });
         info!("liked");
     });
+    let thumbnail_url = match thumbnail_url {
+        Some(t) => Some(t),
+        None => match &url {
+            Some(url) => {
+                let url_str = url.to_string();
+                let is_image = is_image(&url_str);
+                info!("attempting to detect URL type {url_str} {is_image}");
+                if is_image {
+                    Some(url.clone())
+                } else {
+                    None
+                }
+            }
+            None => None,
+        },
+    };
     view! { cx,
-        <div class="flex flex-row bg-gray-800 hover:bg-gray-700 p-4 m-5">
-            <div class="flex flex-col">
+        <div class="flex flex-row bg-neutral-900 hover:bg-neutral-700 p-1 border-neutral-500 border-b-4">
+            <div class="flex flex-col w-12 h-fit">
                 <div
-                    class="flex flex-row text-red-400 hover:text-red-600 align-middle"
+                    class="flex flex-row text-red-400 hover:text-red-600 align-text-top leading-none"
                     on:click=move |_| {
                         if my_vote().unwrap_or_default() == 1 {
                             set_vote(None);
@@ -110,7 +167,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                 </div>
                 <div class="text-gray-500">{move || score()}</div>
                 <div
-                    class="flex flex-row text-blue-300 hover:text-blue-600 align-top"
+                    class="flex flex-row text-blue-300 hover:text-blue-600 align-text-top leading-none"
                     on:click=move |_| {
                         if my_vote().unwrap_or_default() == -1 {
                             set_vote(None);
@@ -151,12 +208,14 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                                 ")"
                             }
                         })}
+                    {featured_community.then(|| view!{cx, "📌"})}
+                    {featured_local.then(|| view!{cx, "📍"})}
                 </div>
                 <div class="flex flex-row">
                     <div class="text-lg">{name}</div>
                 </div>
                 <div class:blur=nsfw class="hover:blur-none">
-                    {url
+                    {url.as_ref()
                         .map(|url| {
                             view! { cx,
                                 <a
@@ -187,8 +246,9 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                         })}
                     {body
                         .map(|body| {
-                            view! { cx, <Markdown content=body/> }
+                            view! { cx, <ShowMore><Markdown content=body/></ShowMore> }
                         })}
+                    {url.as_ref().map(|url| view!{cx, <MagicEmbed url=url.to_string() />})}
                     <div class="bg-gray-700" class:hidden=has_embed>
                         {embed_title
                             .map(|title| {
