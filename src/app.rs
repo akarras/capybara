@@ -4,6 +4,7 @@ use crate::{
     components::{
         feed::{post_preview::*, virtual_scroll::InfinitePage},
         post::Post,
+        posts::Posts,
         profile::Profile,
         sorting_components::{SortMenu, TypeMenu},
     },
@@ -187,79 +188,4 @@ where
         }
     }
     .into_view(cx)
-}
-
-#[component]
-fn Posts(cx: Scope) -> impl IntoView {
-    let (sort, set_sort) = create_signal(cx, None);
-    let (type_, set_type) = create_signal(cx, None);
-    let user = use_context::<CurrentUser>(cx).unwrap();
-    let posts = create_local_resource(
-        cx,
-        move || (sort(), type_(), user.0()),
-        move |(sort, type_, _)| async move {
-            let client = use_context::<CapyClient>(cx).expect("need client");
-
-            client
-                .execute(GetPosts {
-                    sort,
-                    type_,
-                    ..Default::default()
-                })
-                .await
-                .map_err(leptos::error::Error::from)
-        },
-    );
-    view! { cx,
-        <div class="flex flex-col">
-            <div class="flex flex-row sticky h-10">
-                <SortMenu sort set_sort/>
-                <TypeMenu type_ set_type/>
-            </div>
-            <Suspense fallback=move || {
-                view! { cx, "Loading" }
-            }>
-                {move || {
-                    posts
-                        .with(
-                            cx,
-                            move |p| {
-                                view! { cx,
-                                    <ErrorView
-                                        value=p.clone()
-                                        ok=move |p| {
-                                            let posts = p.posts;
-                                            let sort = sort();
-                                            let type_ = type_();
-                                            view! { cx,
-                                                <InfinitePage
-                                                    get_page=move |page| async move {
-                                                        let client = use_context::<CapyClient>(cx).expect("need client");
-                                                        client
-                                                            .execute(GetPosts {
-                                                                page: Some(page as i64),
-                                                                type_,
-                                                                sort,
-                                                                ..Default::default()
-                                                            })
-                                                            .await
-                                                            .unwrap()
-                                                            .posts
-                                                    }
-                                                    key=move |p: &PostView| p.post.id
-                                                    view=move |cx, post| {
-                                                        view! { cx, <PostPreview post/> }
-                                                    }
-                                                    initial_data=posts
-                                                />
-                                            }
-                                        }
-                                    />
-                                }
-                            },
-                        )
-                }}
-            </Suspense>
-        </div>
-    }
 }

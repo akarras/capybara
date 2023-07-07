@@ -5,33 +5,48 @@ use capybara_lemmy_client::{
 use leptos::*;
 use leptos_router::use_query_map;
 
+use crate::components::posts::Posts;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
-enum CommunityKey {
+pub enum CommunityKey {
     Id(CommunityId),
-    Url(String),
+    Name(String),
+}
+
+impl CommunityKey {
+    pub fn id(&self) -> Option<CommunityId> {
+        match self {
+            CommunityKey::Id(id) => Some(*id),
+            CommunityKey::Name(_) => None,
+        }
+    }
+
+    pub fn name(&self) -> Option<String> {
+        match self {
+            CommunityKey::Id(_) => None,
+            CommunityKey::Name(url) => Some(url.to_string()),
+        }
+    }
 }
 
 #[component]
 pub fn Community(cx: Scope) -> impl IntoView {
     let query = use_query_map(cx);
-    let community = create_memo(cx, move |_| {
+    let community_id = create_memo(cx, move |_| {
         query.with(|q| {
             q.get("community").map(|s| {
                 // the community can either be a community ID, or a string representing the url for the community
                 match s.parse() {
                     Ok(val) => CommunityKey::Id(CommunityId(val)),
-                    Err(e) => CommunityKey::Url(s.to_string()),
+                    Err(_e) => CommunityKey::Name(s.to_string()),
                 }
             })
         })
     });
-    let community = create_local_resource(cx, community, move |community| async move {
+    let community = create_local_resource(cx, community_id, move |community| async move {
         let client = use_context::<CapyClient>(cx).unwrap();
-        let (id, name) = match community {
-            Some(CommunityKey::Id(id)) => (Some(id), None),
-            Some(CommunityKey::Url(url)) => (None, Some(url)),
-            None => (None, None),
-        };
+        let id = community.as_ref().and_then(|c| c.id());
+        let name = community.as_ref().and_then(|c| c.name());
         let community = GetCommunity {
             id,
             name,
@@ -46,5 +61,6 @@ pub fn Community(cx: Scope) -> impl IntoView {
             community.flatten().map(|c| view!{cx, <div></div>})
         }}
     </Suspense>
+    <Posts community=Signal::Memo(community)/>
     }
 }

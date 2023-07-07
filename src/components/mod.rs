@@ -5,6 +5,7 @@ pub mod markdown;
 pub mod numbers;
 pub mod person;
 pub mod post;
+pub mod posts;
 pub mod profile;
 pub mod show_more;
 pub mod sorting_components;
