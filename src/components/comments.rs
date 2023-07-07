@@ -157,7 +157,8 @@ pub fn PostComments(cx: Scope, post_id: PostId) -> impl IntoView {
                 .execute(GetComments {
                     post_id: Some(post_id),
                     sort: Some(sort),
-                    limit: Some(100),
+                    limit: None,
+                    page: None,
                     ..Default::default()
                 })
                 .await

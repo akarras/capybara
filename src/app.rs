@@ -16,6 +16,7 @@ use capybara_lemmy_client::{
     CapyClient,
 };
 use leptos::*;
+use leptos_icons::{BiIcon, Icon};
 use leptos_meta::*;
 use leptos_router::*;
 use log::info;
@@ -73,6 +74,8 @@ pub fn App(cx: Scope) -> impl IntoView {
         }
         client.set_jwt(user.map(|u| u.jwt));
     });
+    // keeps a unique key to refresh the user list
+    let user_list = create_rw_signal(cx, 0);
     view! { cx,
         <Body class="bg-neutral-100 dark:bg-neutral-900 text-base dark:text-white"/>
         <main class="container mx-auto px-4">
@@ -83,22 +86,40 @@ pub fn App(cx: Scope) -> impl IntoView {
                 <Profile/>
                 {move || {
                     let mut logins = Settings::get_logins();
-                    logins.retain(|l| !current_user.0().map(|r| r == *l).unwrap_or_default());
+                    let user = current_user();
+                    logins.retain(|l| !user.as_ref().map(|r| r == l).unwrap_or_default());
                     logins
                         .into_iter()
+                        .map(|login| Some(login))
+                        .chain([None].into_iter())
                         .map(|login| {
                             let login_value = login.clone();
+                            let login_value_2 = login.clone();
                             view! { cx,
                                 <button
-                                    class="bg-neutral-800 p-2 rounded"
+                                    class="bg-neutral-800 p-1 rounded hover:bg-neutral-500"
                                     on:click=move |_| {
-                                        current_user.0.set(Some(login_value.clone()));
+                                        current_user.set(login_value.clone());
                                     }
                                 >
-                                    {login.username}
-                                    "@"
-                                    {login.instance}
+                                    {if let Some(login) = login {
+                                        view!{cx, {login.username}
+                                        "@"
+                                        {login.instance}}.into_view(cx)
+                                    } else {
+                                        "guest".into_view(cx)
+                                    }}
                                 </button>
+                                {login_value_2.map(|login| {
+                                    view!{cx, <button class="bg-neutral-800 rounded p-1 hover:bg-neutral-500"
+                                    on:click=move |_| {
+                                        Settings::remove_login(login.clone());
+                                        user_list.update(|i| *i += 1);
+                                    }>
+                                    <Icon icon=MaybeSignal::Static(BiIcon::BiLogOutRegular.into()) />
+                                </button>}
+                                })}
+
                             }
                         })
                         .collect::<Vec<_>>()

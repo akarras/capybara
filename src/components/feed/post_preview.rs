@@ -1,22 +1,35 @@
-use crate::components::{
-    community::CommunityBadge, markdown::Markdown, person::PersonView, show_more::ShowMore,
-    time::RelativeTime,
+use std::ops::Deref;
+
+use crate::{
+    app::CurrentUser,
+    components::{
+        community::CommunityBadge, markdown::Markdown, person::PersonView, show_more::ShowMore,
+        time::RelativeTime,
+    },
 };
 use capybara_lemmy_client::{
     post::{CreatePostLike, Post, PostAggregates, PostView},
     CapyClient,
 };
-use leptos::*;
+use leptos::{html::Video, *};
 use leptos_icons::*;
+use leptos_use::{
+    use_intersection_observer, use_intersection_observer_with_options,
+    UseIntersectionObserverOptions,
+};
 use log::info;
 use serde::Serialize;
+use wasm_bindgen::JsCast;
+use web_sys::HtmlMediaElement;
+
+fn is_magic_embed(url: &str) -> bool {
+    url.starts_with("https://redgifs.com/watch") || url.starts_with("https://www.redgifs.com/watch")
+}
 
 /// Tries to get an embed from known websites
 #[component]
 fn MagicEmbed(cx: Scope, url: String) -> impl IntoView {
-    if url.starts_with("https://redgifs.com/watch")
-        || url.starts_with("https://www.redgifs.com/watch")
-    {
+    if is_magic_embed(&url) {
         let video_id = url.split("/").last();
         video_id.map(|video_id| { view!{cx, <iframe src=format!("https://www.redgifs.com/ifr/{video_id}") frameborder="0" scrolling="no" allowfullscreen class="object-scale-down h-96 aspect-video"></iframe><p><a href=format!("https://www.redgifs.com/watch/{video_id}")>"via RedGIFs"</a></p>}}).into_view(cx)
     } else {
@@ -28,8 +41,12 @@ fn is_image(url: &str) -> bool {
     url.ends_with(".png")
         || url.ends_with(".webp")
         || url.ends_with(".jpeg")
-        || url.ends_with(".webm")
         || url.ends_with(".jpg")
+        || url.ends_with(".gif")
+}
+
+fn is_video(url: &str) -> bool {
+    url.ends_with(".mp4") || url.ends_with(".webm")
 }
 
 #[derive(Serialize)]
@@ -50,6 +67,37 @@ struct ImageDetails {
 
 #[component]
 fn LemmyImage(cx: Scope, thumbnail: Option<String>, link: Option<String>) -> impl IntoView {}
+
+#[component]
+fn VideoPlayer(cx: Scope, src: String) -> impl IntoView {
+    let video_player = create_node_ref(cx);
+    let (playback_enabled, set_playback_enabled) = create_signal(cx, false);
+    use_intersection_observer_with_options(
+        cx,
+        video_player,
+        move |entry, _| {
+            set_playback_enabled(entry[0].is_intersecting());
+        },
+        UseIntersectionObserverOptions::default().thresholds(vec![0.8]),
+    );
+    let playback_enabled = create_memo(cx, move |_| playback_enabled());
+    create_effect(cx, move |_| {
+        let player = video_player();
+        let enabled = playback_enabled();
+        if let Some(player) = player.and_then(|p: HtmlElement<Video>| {
+            let p = p.into_any();
+            let cast = p.deref().clone().dyn_into::<HtmlMediaElement>().ok();
+            cast
+        }) {
+            if enabled {
+                player.play();
+            } else {
+                player.pause();
+            }
+        }
+    });
+    view! {cx, <video controls node_ref=video_player crossorigin="" class="h-96 w-fit aspect-video" src=src />}
+}
 
 #[component]
 pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
@@ -103,8 +151,12 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
         featured_community,
         featured_local,
     } = post;
-    let has_embed =
-        embed_title.is_some() || embed_description.is_some() || embed_video_url.is_some();
+    let url_str = url.as_ref().map(|s| s.to_string()).unwrap_or_default();
+    let has_embed = embed_title.is_some()
+        || embed_description.is_some()
+        || embed_video_url.is_some()
+        || is_video(&url_str)
+        || is_magic_embed(&url_str);
     // get the score without our vote so we can immediately update the signals locally
     let clean_score = score - my_vote.unwrap_or_default() as i64;
     let clean_downvotes = downvotes - (my_vote.unwrap_or_default() == -1) as i64;
@@ -113,19 +165,26 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
     let upvotes = move || clean_upvotes + (my_vote().unwrap_or_default() == 1) as i64;
     let downvotes = move || clean_downvotes + (my_vote().unwrap_or_default() == -1) as i64;
     let score = move || clean_score + my_vote().unwrap_or_default() as i64;
-    create_effect(cx, move |_| {
+    let user = use_context::<CurrentUser>(cx).unwrap();
+    create_effect(cx, move |prev| {
         let vote = my_vote();
-        spawn_local(async move {
-            let client = use_context::<CapyClient>(cx).unwrap();
-            let like = CreatePostLike {
-                post_id,
-                score: vote.unwrap_or_default(),
-                ..Default::default()
-            };
-            // TODO: Actually update the post somehow?
-            let _ = client.execute(like).await;
-        });
-        info!("liked");
+        let user = user();
+        if let Some((Some(prev_user), prev)) = prev {
+            if Some(prev_user) == user && vote != prev {
+                spawn_local(async move {
+                    let client = use_context::<CapyClient>(cx).unwrap();
+                    let like = CreatePostLike {
+                        post_id,
+                        score: vote.unwrap_or_default(),
+                        ..Default::default()
+                    };
+                    // TODO: Actually update the post somehow?
+                    let _ = client.execute(like).await;
+                    info!("liked");
+                });
+            }
+        }
+        (user, vote)
     });
     let thumbnail_url = match thumbnail_url {
         Some(t) => Some(t),
@@ -144,7 +203,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
         },
     };
     view! { cx,
-        <div class="flex flex-row bg-neutral-900 hover:bg-neutral-700 p-1 border-neutral-500 border-b-4">
+        <div class="flex flex-row bg-neutral-900 hover:border-neutral-700 p-1 border-neutral-500 border-b-4">
             <div class="flex flex-col w-12 h-fit">
                 <div
                     class="flex flex-row text-red-400 hover:text-red-600 align-text-top leading-none"
@@ -214,6 +273,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                 <div class="flex flex-row">
                     <div class="text-lg">{name}</div>
                 </div>
+                <div class="blur hidden"></div>
                 <div class:blur=nsfw class="hover:blur-none">
                     {url.as_ref()
                         .map(|url| {
@@ -232,6 +292,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                             let (expanded, set_expanded) = create_signal(cx, false);
                             view! { cx,
                                 <img
+
                                     on:click=move |_| set_expanded(!expanded())
                                     class=move || {
                                         if !expanded() {
@@ -249,19 +310,23 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                             view! { cx, <ShowMore><Markdown content=body/></ShowMore> }
                         })}
                     {url.as_ref().map(|url| view!{cx, <MagicEmbed url=url.to_string() />})}
-                    <div class="bg-gray-700" class:hidden=has_embed>
+                    <div class="bg-neutral-700 p-1 rounded" class:hidden=!has_embed>
                         {embed_title
                             .map(|title| {
-                                view! { cx, <div class="text-lg">{title}</div> }
+                                view! { cx, <div class="text-md">{title}</div> }
                             })}
                         {embed_description
                             .map(|description| {
-                                view! { cx, <div>{description}</div> }
+                                view! { cx, <div class="text-sm">{description}</div> }
                             })}
                         {embed_video_url
                             .map(|url| {
                                 view! { cx, <iframe class="h-96 w-fit aspect-video" src=url.to_string()></iframe> }
                             })}
+                        {url.map(|u| {let u = u.to_string();
+                            is_video(&u).then(||
+                                view!{cx, <VideoPlayer src=u />
+                            })})}
                     </div>
                 </div>
                 <div class="flex-row">

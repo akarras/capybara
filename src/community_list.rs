@@ -51,7 +51,7 @@ pub fn CommunityView(cx: Scope, community: CommunityView) -> impl IntoView {
                 <div><NumberVis value=users_active_month/> " monthly active users"</div>
                 <div><NumberVis value=users_active_half_year/> " half year active users"</div>
             </div>
-            <SubscribeButton community_id subscribe=subscribed />
+            {move || view!{cx, <SubscribeButton community_id subscribe=subscribed />}}
         </div>
     }
 }

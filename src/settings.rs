@@ -39,4 +39,10 @@ impl Settings {
     pub fn current_login() -> Option<LoginInfo> {
         LocalStorage::get("current_login").ok()
     }
+
+    pub fn remove_login(login: LoginInfo) {
+        let mut logins = Self::get_logins();
+        logins.retain(|l| l != &login);
+        LocalStorage::set("logins", logins).unwrap();
+    }
 }

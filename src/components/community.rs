@@ -39,14 +39,14 @@ pub fn CommunityBadge(cx: Scope, community: Community) -> impl IntoView {
         group_link,
         UseElementHoverOptions::default()
             .delay_enter(500)
-            .delay_leave(1000),
+            .delay_leave(500),
     );
     let group_hover = use_element_hover_with_options(
         cx,
         popup,
         UseElementHoverOptions::default()
             .delay_enter(0)
-            .delay_leave(1000),
+            .delay_leave(500),
     );
     view! {cx,
         <div class="relative">

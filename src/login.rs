@@ -11,14 +11,14 @@ pub(crate) fn Login(cx: Scope) -> impl IntoView {
     let instance = create_rw_signal(cx, "https://".to_string());
     let two_factor = create_rw_signal(cx, None);
     view! { cx,
-        <div class="p-4 dark:bg-gray-800">
+        <div class="p-4 dark:bg-neutral-800 w-96">
             <div class="flex flex-col">
                 <label for="username" class="mb-2">
                     "username:"
                 </label>
                 <input
                     id="username"
-                    class="mb-2 p-2 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-md"
+                    class="mb-2 p-2 border border-neutral-300 dark:bg-neutral-700 dark:border-neutral-600 rounded-md"
                     on:input=move |e| username.update(|u| *u = event_target_value(&e))
                 />
                 <label for="password" class="mb-2">
@@ -26,7 +26,7 @@ pub(crate) fn Login(cx: Scope) -> impl IntoView {
                 </label>
                 <input
                     id="password"
-                    class="mb-2 p-2 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-md"
+                    class="mb-2 p-2 border border-neutral-300 dark:bg-neutral-700 dark:border-neutral-600 rounded-md"
                     type="password"
                     on:input=move |e| password.update(|p| *p = event_target_value(&e))
                 />
@@ -35,7 +35,7 @@ pub(crate) fn Login(cx: Scope) -> impl IntoView {
                 </label>
                 <input
                     id="twofactor"
-                    class="mb-2 p-2 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-md"
+                    class="mb-2 p-2 border border-neutral-300 dark:bg-neutral-700 dark:border-neutral-600 rounded-md"
                     on:input=move |e| two_factor.update(|p| {
                         let value = event_target_value(&e);
                         *p = (!value.is_empty()).then(|| value);
@@ -46,11 +46,11 @@ pub(crate) fn Login(cx: Scope) -> impl IntoView {
                 </label>
                 <input
                     id="instance"
-                    class="mb-2 p-2 border border-gray-300 dark:bg-gray-700 dark:border-gray-600 rounded-md"
+                    class="mb-2 p-2 border border-neutral-300 dark:bg-neutral-700 dark:border-neutral-600 rounded-md"
                     on:input=move |e| instance.update(|i| *i = event_target_value(&e))
                 />
                 <button
-                    class="p-2 bg-blue-500 dark:bg-blue-700 text-white dark:text-gray-200 rounded-md"
+                    class="p-2 bg-red-500 dark:bg-red-700 text-white dark:text-neutral-200 rounded-md"
                     on:click=move |e| {
                         let login_request = LemmyLogin {
                             username_or_email: Sensitive::new(username.get_untracked()),

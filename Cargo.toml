@@ -19,10 +19,10 @@ log = "0.4.17"
 wasm-logger = "0.2.0"
 console_error_panic_hook = "0.1.7"
 reqwest = "0.11.15"
-web-sys = {version = "0.3", features = ["History", "Window"]}
+web-sys = {version = "0.3", features = ["History", "Window", "HtmlMediaElement"]}
 chrono = "0.4.24"
 comrak = { version = "0.18.0", default-features = false }
-leptos_icons = {git = "https://github.com/Carlosted/leptos-icons.git", features = ["BiCommentDetailRegular", "BiUpvoteRegular", "BiUpvoteSolid", "BiDownvoteRegular", "BiDownvoteSolid", "BiSortDownRegular"]}
+leptos_icons = {git = "https://github.com/Carlosted/leptos-icons.git", features = ["BiCommentDetailRegular", "BiUpvoteRegular", "BiUpvoteSolid", "BiDownvoteRegular", "BiDownvoteSolid", "BiSortDownRegular", "BiLogOutRegular"]}
 gloo = {version = "0.8.0", features = ["storage"]}
 
 # leptos-use is on leptos main

@@ -1,7 +1,7 @@
 {
   "build": {
     "beforeDevCommand": "trunk serve",
-    "beforeBuildCommand": "trunk build",
+    "beforeBuildCommand": "trunk build --release",
     "devPath": "http://localhost:1420",
     "distDir": "../dist",
     "withGlobalTauri": true
@@ -31,7 +31,7 @@
       ]
     },
     "security": {
-      "csp": ""
+      "csp": null
     },
     "windows": [
       {
