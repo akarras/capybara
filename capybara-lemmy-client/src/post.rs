@@ -115,7 +115,7 @@ pub struct GetPostResponse {
     pub cross_posts: Option<Vec<PostView>>,
 }
 
-#[derive(EnumString, Display, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Hash, EnumString, Display, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum SortType {
     Active,
     Hot,
@@ -133,7 +133,7 @@ pub enum SortType {
     TopTwelveHour,
 }
 
-#[derive(EnumString, Display, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
+#[derive(Hash, EnumString, Display, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq)]
 /// A listing type for post and comment list fetches.
 pub enum ListingType {
     /// Content from your own site, as well as all connected / federated sites.

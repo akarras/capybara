@@ -1,25 +1,45 @@
+use gloo::storage::{SessionStorage, Storage};
 use leptos::*;
 use leptos_use::{use_scroll_with_options, ScrollOffset, UseScrollOptions, UseScrollReturn};
-use std::{collections::HashSet, future::Future, hash::Hash};
+use log::info;
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::{
+    collections::{hash_map::DefaultHasher, HashSet},
+    future::Future,
+    hash::{Hash, Hasher},
+    rc::Rc,
+};
 use web_sys::HtmlDivElement;
 
+#[derive(Serialize, Deserialize)]
+struct ScrollerData<T> {
+    y_scroll: f64,
+    data: Vec<T>,
+}
+
 #[component]
-pub fn InfinitePage<P, PFut, K, KF, VF, V, T>(
+pub fn InfinitePage<P, PFut, K, KF, VF, V, T, CK>(
     cx: Scope,
     get_page: P,
     initial_data: Vec<T>,
     key: KF,
     view: VF,
+    cache_key: CK,
 ) -> impl IntoView
 where
     P: Fn(usize) -> PFut + 'static + Copy,
     PFut: Future<Output = Vec<T>>,
-    T: 'static + Clone,
+    T: 'static + Clone + DeserializeOwned + Serialize,
     KF: Fn(&T) -> K + 'static + Copy,
     K: Eq + Hash + 'static,
     VF: Fn(Scope, T) -> V + 'static,
     V: IntoView,
+    CK: Hash + Eq + PartialEq + 'static,
 {
+    let mut hasher = DefaultHasher::new();
+    cache_key.hash(&mut hasher);
+    let cache_key = hasher.finish();
+
     let scroller = create_node_ref(cx);
     let data = create_rw_signal(cx, initial_data);
     let (hydrating, set_hydrating) = create_signal(cx, false);
@@ -28,6 +48,7 @@ where
     let UseScrollReturn {
         set_y,
         arrived_state,
+        y,
         ..
     } = use_scroll_with_options(
         cx,
@@ -39,6 +60,24 @@ where
             left: 0.0,
         }),
     );
+    let set_y = Rc::new(set_y);
+    let set_y_2 = set_y.clone();
+    if let Ok(previous_session) = SessionStorage::get::<ScrollerData<T>>(cache_key.to_string()) {
+        let ScrollerData {
+            data: prev_data,
+            y_scroll,
+        } = previous_session;
+        data.update(|d| *d = prev_data);
+        request_animation_frame(move || {
+            set_y_2(y_scroll);
+        });
+        info!("restored previous scrolling list {y_scroll}");
+    }
+    on_cleanup(cx, move || {
+        let y_scroll = y();
+        let data = data();
+        let _ = SessionStorage::set(cache_key.to_string(), ScrollerData { y_scroll, data });
+    });
     let hydrate = move || {
         if !hydrating.get_untracked() && !at_end.get_untracked() {
             set_hydrating(true);

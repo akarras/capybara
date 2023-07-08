@@ -16,6 +16,7 @@ use capybara_lemmy_client::{
     sensitive::Sensitive,
     CapyClient,
 };
+use gloo::storage::{SessionStorage, Storage};
 use leptos::*;
 use leptos_icons::{BiIcon, Icon};
 use leptos_meta::*;
@@ -76,6 +77,8 @@ pub fn App(cx: Scope) -> impl IntoView {
             client.set_instance(user.instance.to_string());
         }
         client.set_jwt(user.map(|u| u.jwt));
+        // clear session storage when switching users to prevent issues with cache tricks
+        SessionStorage::clear();
     });
     // keeps a unique key to refresh the user list
     let user_list = create_rw_signal(cx, 0);

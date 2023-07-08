@@ -132,6 +132,7 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
                                                 view=|cx, community| {
                                                     view! { cx, <CommunityView community/> }
                                                 }
+                                                cache_key=("community_list", show_nsfw(), type_(), sort())
                                             />
                                         }
                                     }

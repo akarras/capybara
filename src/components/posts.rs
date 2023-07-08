@@ -64,7 +64,9 @@ pub fn Posts(
                                             let posts = p.posts;
                                             let sort = sort();
                                             let type_ = type_();
-
+                                            let community_temp = community.and_then(|c| c.get());
+                                            let community_id = community_temp.as_ref().and_then(|id| id.id());
+                                            let community_name = community_temp.as_ref().and_then(|name| name.name());
                                             view! { cx,
                                                 <InfinitePage
                                                     get_page=move |page| async move {
@@ -90,6 +92,7 @@ pub fn Posts(
                                                         view! { cx, <PostPreview post/> }
                                                     }
                                                     initial_data=posts
+                                                    cache_key=(("posts", sort, type_, community_id, community_name))
                                                 />
                                             }
                                         }
