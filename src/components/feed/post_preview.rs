@@ -4,7 +4,7 @@ use crate::{
     app::CurrentUser,
     components::{
         community::CommunityBadge, markdown::Markdown, person::PersonView, show_more::ShowMore,
-        time::RelativeTime,
+        time::RelativeTime, voter::Voter,
     },
 };
 use capybara_lemmy_client::{
@@ -185,13 +185,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
         || is_magic_embed(&url_str);
     let subscribed = create_rw_signal(cx, subscribed);
     // get the score without our vote so we can immediately update the signals locally
-    let clean_score = score - my_vote.unwrap_or_default() as i64;
-    let clean_downvotes = downvotes - (my_vote.unwrap_or_default() == -1) as i64;
-    let clean_upvotes = upvotes - (my_vote.unwrap_or_default() == 1) as i64;
-    let (my_vote, set_vote) = create_signal(cx, my_vote);
-    let upvotes = move || clean_upvotes + (my_vote().unwrap_or_default() == 1) as i64;
-    let downvotes = move || clean_downvotes + (my_vote().unwrap_or_default() == -1) as i64;
-    let score = move || clean_score + my_vote().unwrap_or_default() as i64;
+    let my_vote = create_rw_signal(cx, my_vote);
     let user = use_context::<CurrentUser>(cx).unwrap();
     create_effect(cx, move |prev| {
         let vote = my_vote();
@@ -231,47 +225,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
     };
     view! { cx,
         <div class="flex flex-row bg-neutral-900 hover:border-neutral-700 p-1 border-neutral-500 border-b-4">
-            <div class="flex flex-col w-12 h-fit">
-                <button
-                    class="flex flex-row text-red-400 hover:text-red-600 align-text-top leading-none"
-                    on:click=move |_| {
-                        if my_vote().unwrap_or_default() == 1 {
-                            set_vote(None);
-                        } else {
-                            set_vote(Some(1))
-                        }
-                    }
-                >
-                    {move || {
-                        if my_vote() == Some(1) {
-                            view! { cx, <Icon icon=MaybeSignal::Static(BiIcon::BiUpvoteSolid.into())/> }
-                        } else {
-                            view! { cx, <Icon icon=MaybeSignal::Static(BiIcon::BiUpvoteRegular.into())/> }
-                        }
-                    }}
-                    {move || upvotes()}
-                </button>
-                <div class="text-gray-500">{move || score()}</div>
-                <button
-                    class="flex flex-row text-blue-300 hover:text-blue-600 align-text-top leading-none"
-                    on:click=move |_| {
-                        if my_vote().unwrap_or_default() == -1 {
-                            set_vote(None);
-                        } else {
-                            set_vote(Some(-1))
-                        }
-                    }
-                >
-                    {move || {
-                        if my_vote() == Some(-1) {
-                            view! { cx, <Icon icon=MaybeSignal::Static(BiIcon::BiDownvoteSolid.into())/> }
-                        } else {
-                            view! { cx, <Icon icon=MaybeSignal::Static(BiIcon::BiDownvoteRegular.into())/> }
-                        }
-                    }}
-                    {move || downvotes()}
-                </button>
-            </div>
+            <Voter my_vote upvotes downvotes score />
             <div class="flex flex-col">
                 <div class="flex flex-row gap-1">
                     <PersonView person=creator/>

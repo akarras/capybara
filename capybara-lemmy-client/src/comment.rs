@@ -1,5 +1,6 @@
 use crate::{
     community::{Community, CommunityId, SubscribedType},
+    local_user::LocalUserId,
     person::{Person, PersonId},
     post::{LanguageId, ListingType, Post, PostId},
     sensitive::Sensitive,
@@ -83,6 +84,25 @@ pub struct Comment {
     /// Whether the comment has been distinguished(speaking officially) by a mod.
     pub distinguished: bool,
     pub language_id: LanguageId,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+/// Like a comment.
+pub struct CreateCommentLike {
+    pub comment_id: CommentId,
+    /// Must be -1, 0, or 1 .
+    pub score: i16,
+    pub auth: Sensitive<String>,
+}
+
+#[skip_serializing_none]
+#[derive(Debug, Serialize, Deserialize, Clone)]
+/// A comment response.
+pub struct CommentResponse {
+    pub comment_view: CommentView,
+    pub recipient_ids: Vec<LocalUserId>,
+    /// An optional front end ID, to tell which is coming back  
+    pub form_id: Option<String>,
 }
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Clone)]

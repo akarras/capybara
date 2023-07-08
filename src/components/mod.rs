@@ -12,3 +12,4 @@ pub mod show_more;
 pub mod sorting_components;
 pub mod subscribe;
 pub mod time;
+pub mod voter;
