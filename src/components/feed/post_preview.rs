@@ -99,8 +99,34 @@ fn VideoPlayer(cx: Scope, src: String) -> impl IntoView {
     view! {cx, <video controls node_ref=video_player crossorigin="" class="h-96 w-fit aspect-video" src=src />}
 }
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ViewMode {
+    Default,
+    BigImage,
+}
+
+#[derive(Copy, Clone)]
+pub struct GlobalViewMode(pub RwSignal<ViewMode>);
+
+impl AsRef<RwSignal<ViewMode>> for GlobalViewMode {
+    fn as_ref(&self) -> &RwSignal<ViewMode> {
+        &self.0
+    }
+}
+
+#[derive(Copy, Clone)]
+pub struct GlobalBlurState(pub RwSignal<bool>);
+
+impl AsRef<RwSignal<bool>> for GlobalBlurState {
+    fn as_ref(&self) -> &RwSignal<bool> {
+        &self.0
+    }
+}
+
 #[component]
 pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
+    let view_mode = use_context::<GlobalViewMode>(cx).unwrap();
+    let global_blur = use_context::<GlobalBlurState>(cx).unwrap();
     let PostView {
         post,
         creator,
@@ -205,7 +231,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
     view! { cx,
         <div class="flex flex-row bg-neutral-900 hover:border-neutral-700 p-1 border-neutral-500 border-b-4">
             <div class="flex flex-col w-12 h-fit">
-                <div
+                <button
                     class="flex flex-row text-red-400 hover:text-red-600 align-text-top leading-none"
                     on:click=move |_| {
                         if my_vote().unwrap_or_default() == 1 {
@@ -223,9 +249,9 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                         }
                     }}
                     {move || upvotes()}
-                </div>
+                </button>
                 <div class="text-gray-500">{move || score()}</div>
-                <div
+                <button
                     class="flex flex-row text-blue-300 hover:text-blue-600 align-text-top leading-none"
                     on:click=move |_| {
                         if my_vote().unwrap_or_default() == -1 {
@@ -243,7 +269,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                         }
                     }}
                     {move || downvotes()}
-                </div>
+                </button>
             </div>
             <div class="flex flex-col">
                 <div class="flex flex-row gap-1">
@@ -274,7 +300,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                     <div class="text-lg">{name}</div>
                 </div>
                 <div class="blur hidden"></div>
-                <div class:blur=nsfw class="hover:blur-none">
+                <div class:blur=move || { nsfw && global_blur.0() } class="hover:blur-none">
                     {url.as_ref()
                         .map(|url| {
                             view! { cx,
@@ -295,7 +321,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
 
                                     on:click=move |_| set_expanded(!expanded())
                                     class=move || {
-                                        if !expanded() {
+                                        if !expanded() && view_mode.0() == ViewMode::Default {
                                             "max-h-96 max-w-96 object-scale-down"
                                         } else {
                                             "max-h-[calc(100vh-200px)] max-w-screen min-h-96 min-w-96 object-scale-down"

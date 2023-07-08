@@ -50,7 +50,7 @@ pub fn CommunityBadge(cx: Scope, community: Community) -> impl IntoView {
     );
     view! {cx,
         <div class="relative">
-            <a href=format!("/community/{}", id.0) class="flex flex-row underline text-red-400 hover:text-red-600" class:font-bold=nsfw node_ref=group_link>
+            <a href=format!("/c/{}", id.0) class="flex flex-row underline text-red-400 hover:text-red-600" class:font-bold=nsfw node_ref=group_link>
             {icon.as_ref().map(|icon| view!{cx, <img class="rounded w-6 h-6" src=icon.to_string()/>})}
             {name}
             {(!local).then(|| view!{cx, <div class="italic">"@"{actor_id.host_str().unwrap_or_default().to_string()}</div>})}

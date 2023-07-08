@@ -3,7 +3,8 @@ use capybara_lemmy_client::{
     CapyClient,
 };
 use leptos::*;
-use leptos_router::use_query_map;
+use leptos_router::{use_params_map, use_query_map};
+use log::info;
 
 use crate::components::posts::Posts;
 
@@ -31,9 +32,9 @@ impl CommunityKey {
 
 #[component]
 pub fn Community(cx: Scope) -> impl IntoView {
-    let query = use_query_map(cx);
+    let query = use_params_map(cx);
     let community_id = create_memo(cx, move |_| {
-        query.with(|q| {
+        let community_id = query.with(|q| {
             q.get("community").map(|s| {
                 // the community can either be a community ID, or a string representing the url for the community
                 match s.parse() {
@@ -41,7 +42,9 @@ pub fn Community(cx: Scope) -> impl IntoView {
                     Err(_e) => CommunityKey::Name(s.to_string()),
                 }
             })
-        })
+        });
+        info!("community loading {community_id:?}");
+        community_id
     });
     let community = create_local_resource(cx, community_id, move |community| async move {
         let client = use_context::<CapyClient>(cx).unwrap();
@@ -61,6 +64,12 @@ pub fn Community(cx: Scope) -> impl IntoView {
             community.flatten().map(|c| view!{cx, <div></div>})
         }}
     </Suspense>
-    <Posts community=Signal::Memo(community)/>
+    {move || {
+        if community_id().is_some() {
+            view!{cx, <Posts community=community_id />}.into_view(cx)
+        } else {
+            view!{cx, "No community ID found in URL"}.into_view(cx)
+        }
+    }}
     }
 }

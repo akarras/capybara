@@ -9,6 +9,7 @@ use crate::{
     community::CommunityKey,
     components::{
         feed::{post_preview::PostPreview, virtual_scroll::InfinitePage},
+        post_view_controls::PostViewControls,
         sorting_components::{SortMenu, TypeMenu},
     },
 };
@@ -45,6 +46,8 @@ pub fn Posts(
             <div class="flex flex-row sticky h-10">
                 <SortMenu sort set_sort/>
                 <TypeMenu type_ set_type/>
+                <div class="w-5"></div>
+                <PostViewControls />
             </div>
             <Suspense fallback=move || {
                 view! { cx, "Loading" }

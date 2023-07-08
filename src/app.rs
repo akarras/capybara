@@ -54,6 +54,8 @@ pub fn App(cx: Scope) -> impl IntoView {
     let jwt = Settings::current_login();
     let current_user = CurrentUser(create_rw_signal(cx, jwt.clone()));
     info!("{jwt:?}");
+    provide_context(cx, GlobalViewMode(create_rw_signal(cx, ViewMode::Default)));
+    provide_context(cx, GlobalBlurState(create_rw_signal(cx, true)));
     provide_context(cx, current_user);
     provide_context(
         cx,
