@@ -106,6 +106,7 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
         child_count,
         hot_rank,
     } = counts;
+    let subscribed = create_rw_signal(cx, subscribed);
     view! { cx,
         <div class="border-l-red-300 border-l-2 bg-gray-900 p-4">
             <div class="flex flex-row gap-2">
@@ -123,7 +124,7 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
             <div class="flex flex-col transition" class:hidden=collapsed>
                 <div class="flex flex-row">
                     <PersonView person=creator/>
-                    <CommunityBadge community/>
+                    <CommunityBadge community subscribed />
                 </div>
                 <Markdown content/>
                 <div class="flex flex-row">

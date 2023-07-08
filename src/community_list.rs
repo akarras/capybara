@@ -37,10 +37,11 @@ pub fn CommunityView(cx: Scope, community: CommunityView) -> impl IntoView {
         users_active_half_year,
         hot_rank,
     } = counts;
+    let subscribed = create_rw_signal(cx, subscribed);
     view! { cx,
         <div class="flex flex-row p-5 border-4 border-neutral-700 bg-neutral-800 text-neutral-100 gap-5">
             <div class="flex flex-col">
-                <CommunityBadge community/>
+                <CommunityBadge community subscribed />
                 <div><NumberVis value=subscribers/>" subscribers"</div>
                 <div><NumberVis value=posts/>" posts"</div>
                 <div><NumberVis value=comments/> " comments"</div>
@@ -51,7 +52,7 @@ pub fn CommunityView(cx: Scope, community: CommunityView) -> impl IntoView {
                 <div><NumberVis value=users_active_month/> " monthly active users"</div>
                 <div><NumberVis value=users_active_half_year/> " half year active users"</div>
             </div>
-            <SubscribeButton community_id subscribe=subscribed />
+            <SubscribeButton community_id subscribed />
         </div>
     }
 }

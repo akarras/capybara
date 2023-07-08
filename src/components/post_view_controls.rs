@@ -14,7 +14,7 @@ pub fn PostViewControls(cx: Scope) -> impl IntoView {
             blur_nsfw.0.update(|nsfw| {*nsfw = !*nsfw;});
         }/>
         <label for="blurnsfw">"blur nsfw:"</label>
-        <button class="bg-neutral-800 hover:bg-neutral-500 border-gray-300 border-b-1 p-1 align-bottom">
+        <button class="bg-neutral-800 hover:bg-neutral-500 border-gray-300 border-b-1 p-1 align-bottom" on:click=move |_| { post_view_mode.0.set(ViewMode::Default) } >
             "default"
         </button>
         <button class="bg-neutral-800 hover:bg-neutral-500 border-gray-300 border-b-1 p-1 align-bottom" on:click=move |_| { post_view_mode.0.set(ViewMode::BigImage) } >

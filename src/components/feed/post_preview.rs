@@ -183,6 +183,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
         || embed_video_url.is_some()
         || is_video(&url_str)
         || is_magic_embed(&url_str);
+    let subscribed = create_rw_signal(cx, subscribed);
     // get the score without our vote so we can immediately update the signals locally
     let clean_score = score - my_vote.unwrap_or_default() as i64;
     let clean_downvotes = downvotes - (my_vote.unwrap_or_default() == -1) as i64;
@@ -275,7 +276,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                 <div class="flex flex-row gap-1">
                     <PersonView person=creator/>
                     "to"
-                    <CommunityBadge community/>
+                    <CommunityBadge community subscribed />
                     {locked
                         .then(|| {
                             view! { cx, <div class="bg-slate-500 px-2 rounded">"locked"</div> }

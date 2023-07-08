@@ -1,11 +1,15 @@
-use capybara_lemmy_client::community::Community;
+use capybara_lemmy_client::community::{Community, SubscribedType};
 use leptos::*;
 use leptos_use::{use_element_hover_with_options, UseElementHoverOptions};
 
-use crate::components::{markdown::Markdown, time::RelativeTime};
+use crate::components::{markdown::Markdown, subscribe::SubscribeButton, time::RelativeTime};
 
 #[component]
-pub fn CommunityBadge(cx: Scope, community: Community) -> impl IntoView {
+pub fn CommunityBadge(
+    cx: Scope,
+    community: Community,
+    subscribed: RwSignal<SubscribedType>,
+) -> impl IntoView {
     let Community {
         id,
         name,
@@ -58,17 +62,25 @@ pub fn CommunityBadge(cx: Scope, community: Community) -> impl IntoView {
             </a>
             <div class="flex-col absolute top-10 left-10 p-5 z-10 w-96 h-96 overflow-y-auto bg-neutral-800 rounded-xl" class:hidden=move || { !(hovered() || group_hover()) } node_ref=popup>
                 <div class="flex flex-col">
-                    {banner.map(|b| view!{cx, <img src=b.to_string() class="h-40 w-96"/>})}
+                    {banner.map(|b| view!{cx, <img src=b.to_string() class="h-fit w-96"/>})}
                     <div class="flex flex-row">
                         {icon.map(|icon| view!{cx, <img class="rounded w-12 h-12" src=icon.to_string()/>})}
-                        <div class="text-lg">{title}</div>
-                        {hidden.then(|| view!{cx, <div class="bg-gray-700 rounded p-1">"hidden"</div>})}
-                        {removed.then(|| view!{cx, <div class="bg-gray-700 rounded p-1">"removed"</div>})}
-                        {nsfw.then(|| view!{cx, <div class="bg-red-700 rounded p-1 text-white">"nsfw"</div>})}
-                        {deleted.then(|| view!{cx, <div class="bg-neutral-600 rounded p-1">"deleted"</div>})}
+                        <div class="flex flex-col">
+                            <div class="flex flex-row">
+                                <div class="text-lg">{title}</div>
+                                {hidden.then(|| view!{cx, <div class="bg-gray-700 rounded p-1">"hidden"</div>})}
+                                {removed.then(|| view!{cx, <div class="bg-gray-700 rounded p-1">"removed"</div>})}
+                                {nsfw.then(|| view!{cx, <div class="bg-red-700 rounded p-1 text-white">"nsfw"</div>})}
+                                {deleted.then(|| view!{cx, <div class="bg-neutral-600 rounded p-1">"deleted"</div>})}
+                            </div>
+                            <div class="flex flex-row gap-1">
+                                <div class="text-gray-500">"created:"<RelativeTime time=published/></div>
+                                {updated.map(|updated| view!{cx, <div class="text-gray-500">"(updated "<RelativeTime time=updated/>")"</div>})}
+                            </div>
+                        </div>
+
                     </div>
-                    <div class="text-gray-500">"created:"<RelativeTime time=published/></div>
-                    {updated.map(|updated| view!{cx, <div class="text-gray-500">"(updated "<RelativeTime time=updated/>")"</div>})}
+                    <SubscribeButton community_id=id subscribed />
                     {description.map(|description| view!{cx, <Markdown content=description />})}
                 </div>
             </div>
