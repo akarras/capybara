@@ -8,7 +8,7 @@ edition = "2021"
 leptos = { version = "0.4", features = ["csr", "nightly"] }
 leptos_router = { version = "0.4", features = ["csr", "nightly"] }
 leptos_meta = { version = "0.4", features = ["csr", "nightly"] }
-leptos-use = { version = "0.4"}
+leptos-use = { version = "0.4.1"}
 serde = { version = "1.0", features = ["derive"] }
 serde-wasm-bindgen = "0.5"
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
@@ -19,7 +19,7 @@ log = "0.4.17"
 wasm-logger = "0.2.0"
 console_error_panic_hook = "0.1.7"
 reqwest = "0.11.15"
-web-sys = {version = "0.3", features = ["History", "Window", "HtmlMediaElement"]}
+web-sys = {version = "0.3", features = ["History", "Window", "HtmlMediaElement", "Clipboard"]}
 chrono = "0.4.24"
 # I'd like to replace comark with markdown-it at some point but I get an odd compiler error on MacOS when compiling the wasm.
 # Compiling with:
@@ -27,7 +27,7 @@ chrono = "0.4.24"
 # lets it compile on MacOS, but I consider it low priority and am focused on other things first.
 comrak = { version = "0.18.0", default-features = false }
 leptos_icons = {git = "https://github.com/Carlosted/leptos-icons.git", features = ["BiCommentDetailRegular", "BiUpvoteRegular", "BiUpvoteSolid",
-    "BiDownvoteRegular", "BiDownvoteSolid", "BiSortDownRegular", "BiLogOutRegular", "BsShareFill", "BiSaveRegular", "BsReplyFill"]}
+    "BiDownvoteRegular", "BiDownvoteSolid", "BiSortDownRegular", "BiLogOutRegular", "BsShareFill", "BiSaveRegular", "BsReplyFill", "FaCommentsSolid", "BsPeopleFill"]}
 gloo = {version = "0.8.0", features = ["storage"]}
 
 # leptos-use is on leptos main

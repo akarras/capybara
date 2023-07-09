@@ -420,6 +420,10 @@ impl CapyClient {
     pub fn set_instance(&self, instance: String) {
         self.inner.borrow_mut().hostname = instance;
     }
+
+    pub fn get_instance(&self) -> String {
+        self.inner.borrow().hostname.clone()
+    }
 }
 
 // #[cfg(test)]

@@ -1,7 +1,7 @@
 use std::ops::Deref;
 
 use crate::{
-    app::CurrentUser,
+    app::{CurrentUser, HideRead},
     components::{
         community::CommunityBadge, markdown::Markdown, person::PersonView, show_more::ShowMore,
         time::RelativeTime, voter::Voter,
@@ -96,7 +96,9 @@ fn VideoPlayer(cx: Scope, src: String) -> impl IntoView {
             }
         }
     });
-    view! {cx, <video controls node_ref=video_player class="h-96 w-fit aspect-video" src=src />}
+    let global_view_mode = use_context::<GlobalViewMode>(cx).unwrap();
+    
+    view! {cx, <video controls node_ref=video_player class=move || match global_view_mode.0()  { ViewMode::BigImage => "min-h-96 min-w-96 max-h-[calc(100vh-200px)] max-w-full aspect-video", ViewMode::Default => "h-96 w-fit aspect-video" } src=src />}
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -223,8 +225,9 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
             None => None,
         },
     };
+    let hide_read = use_context::<HideRead>(cx).unwrap();
     view! { cx,
-        <div class="flex flex-row bg-neutral-900 hover:border-neutral-700 p-1 border-neutral-500 border-b-4">
+        <div class="flex flex-row bg-neutral-900 hover:border-neutral-700 p-1 border-neutral-500 border-b-4" class:hidden=move || read && hide_read.0() >
             <Voter my_vote upvotes downvotes score />
             <div class="flex flex-col">
                 <div class="flex flex-row gap-1">
@@ -250,6 +253,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                         })}
                     {featured_community.then(|| view!{cx, "📌"})}
                     {featured_local.then(|| view!{cx, "📍"})}
+                    {read.then(|| view!{cx, <div class="px-2 rounded bg-gray-800">"read"</div>})}
                 </div>
                 <div class="flex flex-row">
                     <div class="text-lg">{name}</div>
@@ -279,7 +283,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                                         if !expanded() && view_mode.0() == ViewMode::Default {
                                             "max-h-96 max-w-96 object-scale-down"
                                         } else {
-                                            "max-h-[calc(100vh-200px)] max-w-screen min-h-96 min-w-96 object-scale-down"
+                                            "max-h-[calc(100vh-200px)] max-w-full min-h-96 min-w-96 object-scale-down"
                                         }
                                     }
                                     src=url.to_string()
@@ -319,7 +323,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                             })})}
                     </div>
                 </div>
-                <div class="flex-row">
+                <div class="flex flex-row gap-2 p-1 leading-none">
                     <a
                         class="text-gray-500 hover:text-gray-400 underline flex flex-row"
                         href=format!("/post/{}", id.0)
@@ -331,6 +335,16 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                                 view! { cx, <div class="text-red-300">"(" {unread_comments} " unread)"</div> }
                             })}
                     </a>
+                    <button class="text-gray-500 hover:text-gray-400 flex flex-row gap-1 underline" on:click=move |_| {
+                        let client = use_context::<CapyClient>(cx).unwrap();
+                        let current_instance = client.get_instance();
+                        let share_url = format!("{current_instance}/post/{}", post_id.0);
+                        let clipboard = window().navigator().clipboard().unwrap();
+                        let promise = clipboard.write_text(&share_url);
+                        spawn_local(async move {
+                            wasm_bindgen_futures::JsFuture::from(promise).await.unwrap();
+                        })
+                    }><Icon icon=MaybeSignal::Static(BsIcon::BsShareFill.into())/>"share"</button>
                 </div>
             </div>
         </div>

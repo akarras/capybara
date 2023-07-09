@@ -18,7 +18,7 @@ pub fn ReplyButton(
         <div
         class=move || {
             if reply() {
-                "flex flex-row bold text-yellow-500 hover:text-yellow-400 bg-gray-500 rounded leading-none"
+                "flex flex-row bold text-yellow-500 hover:text-yellow-400 rounded leading-none"
             } else {
                 "flex flex-row bold text-gray-500 hover:text-gray-400 leading-none"
             }

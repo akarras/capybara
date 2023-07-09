@@ -4,6 +4,7 @@ use capybara_lemmy_client::{
     CapyClient,
 };
 use leptos::*;
+use leptos_icons::{Icon, FaIcon, BsIcon};
 
 use crate::{
     app::{CurrentUser, ErrorView},
@@ -12,7 +13,7 @@ use crate::{
         feed::virtual_scroll::InfinitePage,
         numbers::NumberVis,
         sorting_components::{SortMenu, TypeMenu},
-        subscribe::SubscribeButton,
+        subscribe::SubscribeButton, time::RelativeTime,
     },
 };
 
@@ -25,32 +26,26 @@ pub fn CommunityView(cx: Scope, community: CommunityView) -> impl IntoView {
         counts,
     } = community;
     let CommunityAggregates {
-        id,
         community_id,
         subscribers,
         posts,
         comments,
         published,
-        users_active_day,
-        users_active_week,
         users_active_month,
-        users_active_half_year,
-        hot_rank,
+        ..
     } = counts;
     let subscribed = create_rw_signal(cx, subscribed);
     view! { cx,
-        <div class="flex flex-row p-5 border-4 border-neutral-700 bg-neutral-800 text-neutral-100 gap-5">
-            <div class="flex flex-col">
+        <div class="flex flex-col p-5 border-2 border-neutral-700 bg-neutral-800 text-neutral-100 gap-2">
+            <div class="flex flex-row gap-1 text-2xl">
                 <CommunityBadge community subscribed />
-                <div><NumberVis value=subscribers/>" subscribers"</div>
-                <div><NumberVis value=posts/>" posts"</div>
-                <div><NumberVis value=comments/> " comments"</div>
+                "created: "<RelativeTime time=published />
             </div>
-            <div class="flex flex-col">
-                <div><NumberVis value=users_active_day/>" daily active users"</div>
-                <div><NumberVis value=users_active_week/>" weekly active users"</div>
-                <div><NumberVis value=users_active_month/> " monthly active users"</div>
-                <div><NumberVis value=users_active_half_year/> " half year active users"</div>
+            <div class="flex flex-row leading-none gap-1 p-1 text-xl">
+                <Icon icon=MaybeSignal::Static(BsIcon::BsPeopleFill.into()) /><NumberVis value=subscribers/>
+                <div><NumberVis value=posts/>" posts"</div>
+                <Icon icon=MaybeSignal::Static(FaIcon::FaCommentsSolid.into()) /><NumberVis value=comments/>
+                <div class="flex flex-row leading-none"><Icon icon=MaybeSignal::Static(BsIcon::BsPeopleFill.into()) /><NumberVis value=users_active_month/> " monthly active users"</div>
             </div>
             <SubscribeButton community_id subscribed />
         </div>
@@ -73,6 +68,7 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
                     show_nsfw,
                     type_,
                     sort,
+                    limit: Some(50),
                     ..Default::default()
                 })
                 .await
@@ -81,19 +77,21 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
     );
     view! { cx,
         <div>
-            <SortMenu sort set_sort />
-            <TypeMenu type_ set_type />
-            <button class="p-1 bg-neutral-800 hover:bg-neutral-600" on:click=move |_| {
-                set_show_nsfw(match show_nsfw.get_untracked() {
-                    Some(true) => Some(false),
-                    Some(false) => None,
-                    None => Some(true)
-                })
-            }>{move || match show_nsfw() {
-                Some(true) => "nsfw only",
-                Some(false) => "no nsfw",
-                None => "nsfw filter not set"
-            }}</button>
+            <div class="flex flex-row">
+                <SortMenu sort set_sort />
+                <TypeMenu type_ set_type />
+                <button class="p-1 bg-neutral-800 hover:bg-neutral-600" on:click=move |_| {
+                    set_show_nsfw(match show_nsfw.get_untracked() {
+                        Some(true) => Some(false),
+                        Some(false) => None,
+                        None => Some(true)
+                    })
+                }>{move || match show_nsfw() {
+                    Some(true) => "nsfw only",
+                    Some(false) => "no nsfw",
+                    None => "nsfw filter not set"
+                }}</button>
+            </div>
             <Suspense fallback=move || {
                 view! { cx, "Loading" }
             }>
@@ -121,6 +119,7 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
                                                                 type_,
                                                                 sort,
                                                                 page: Some(page as i64),
+                                                                limit: Some(50),
                                                                 ..Default::default()
                                                             })
                                                             .await

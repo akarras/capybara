@@ -1,19 +1,16 @@
 use crate::{
     community::Community,
-    community_list::{CommunityList, CommunityView},
+    community_list::{CommunityList},
     components::{
-        feed::{post_preview::*, virtual_scroll::InfinitePage},
+        feed::{post_preview::*},
         post::Post,
         posts::Posts,
         profile::Profile,
-        sorting_components::{SortMenu, TypeMenu},
     },
     login::Login,
     settings::{LoginInfo, Settings},
 };
 use capybara_lemmy_client::{
-    post::{GetPosts, PostView},
-    sensitive::Sensitive,
     CapyClient,
 };
 use gloo::storage::{SessionStorage, Storage};
@@ -48,6 +45,9 @@ impl Deref for CurrentUser {
     }
 }
 
+#[derive(Clone, Copy)]
+pub struct HideRead(pub RwSignal<bool>);
+
 #[component]
 pub fn App(cx: Scope) -> impl IntoView {
     panic::set_hook(Box::new(console_error_panic_hook::hook));
@@ -69,6 +69,8 @@ pub fn App(cx: Scope) -> impl IntoView {
             current_user.0.get_untracked().map(|user| user.jwt.clone()),
         ),
     );
+    let hide_read = HideRead(create_rw_signal(cx, false));
+    provide_context(cx, hide_read);
     create_effect(cx, move |_| {
         let user = current_user();
         Settings::set_current_login(user.clone());

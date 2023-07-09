@@ -18,7 +18,7 @@ pub fn Voter(
     let score = move || clean_score + my_vote().unwrap_or_default() as i64;
 
     view! { cx,
-        <div class="flex flex-col w-12 h-fit">
+        <div class="flex flex-col h-fit pr-2">
             <button
                 class="flex flex-row text-red-400 hover:text-red-600 align-text-top leading-none"
                 on:click=move |_| {

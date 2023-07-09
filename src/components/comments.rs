@@ -189,10 +189,10 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
                     </div>
                 </div>
                 <PersonView person=creator/>
-                <div class="p-2">
+                <div>
                     <Markdown content/>
                 </div>
-                <div class="flex flex-row gap-2">
+                <div class="flex flex-row gap-1 p-1">
                     <ReplyButton reply set_reply />
                     <SaveButton saved set_saved/>
                 </div>

@@ -50,48 +50,49 @@ pub fn SubscribeButton(
         }
         (user, new_sub)
     });
+    let _ = view!{cx, <div class="animate-pulse"></div>};
     view! { cx,
         {move || {
             match (current_user(), subscribed()) {
                 (None, _) => {
-                    view!{cx, <div></div>}
+                    view!{cx, <button></button>}
                 }
                 (_, SubscribedType::Subscribed) => {
                     view! { cx,
-                        <div
-                            class="p-1 text-green-600 underline cursor-pointer"
+                        <button
+                            class="p-1 bg-green-600 hover:bg-green-400 underline rounded"
                             on:click=move |_| {
                                 subscribed.set(SubscribedType::NotSubscribed);
                             }
                             class:animate-pulse=pending
                         >
                             "Subscribed"
-                        </div>
+                        </button>
                     }
                 }
                 (_, SubscribedType::NotSubscribed)=> {
                     view! { cx,
-                        <div
-                            class="p-1 text-gray-400 underline cursor-pointer"
+                        <button
+                            class="p-1 bg-gray-400 hover:bg-gray-300 underline rounded"
                             on:click=move |_| {
                                 subscribed.set(SubscribedType::Subscribed);
                             }
                             class:animate-pulse=pending
                         >
                             "Not Subscribed"
-                        </div>
+                        </button>
                     }
                 }
                 (_, SubscribedType::Pending) => {
                     view! { cx,
-                        <div
-                            class="p-1 text-yellow-400 stroke-black underline cursor-pointer" class:animate-pulse=pending
+                        <button
+                            class="p-1 bg-yellow-400 bg:text-yellow-300 underline rounded" class:animate-pulse=pending
                             on:click=move |_| {
                                 subscribed.set(SubscribedType::Subscribed);
                             }
                         >
                             "Pending"
-                        </div>
+                        </button>
                     }
                 }
             }
