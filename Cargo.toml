@@ -21,6 +21,10 @@ console_error_panic_hook = "0.1.7"
 reqwest = "0.11.15"
 web-sys = {version = "0.3", features = ["History", "Window", "HtmlMediaElement"]}
 chrono = "0.4.24"
+# I'd like to replace comark with markdown-it at some point but I get an odd compiler error on MacOS when compiling the wasm.
+# Compiling with:
+# AR=/opt/homebrew/opt/llvm/bin/llvm-ar CC=/opt/homebrew/opt/llvm/bin/clang cargo tauri dev
+# lets it compile on MacOS, but I consider it low priority and am focused on other things first.
 comrak = { version = "0.18.0", default-features = false }
 leptos_icons = {git = "https://github.com/Carlosted/leptos-icons.git", features = ["BiCommentDetailRegular", "BiUpvoteRegular", "BiUpvoteSolid",
     "BiDownvoteRegular", "BiDownvoteSolid", "BiSortDownRegular", "BiLogOutRegular", "BsShareFill", "BiSaveRegular", "BsReplyFill"]}
