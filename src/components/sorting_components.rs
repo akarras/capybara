@@ -1,4 +1,8 @@
-use capybara_lemmy_client::post::{ListingType, SortType};
+use capybara_lemmy_client::{
+    comment::CommentSortType,
+    post::{ListingType, SortType},
+    strum::IntoEnumIterator,
+};
 use leptos::*;
 use leptos_icons::*;
 
@@ -19,6 +23,18 @@ fn sort_to_text(sort_type: Option<SortType>) -> &'static str {
         Some(SortType::TopHour) => "Top Hour",
         Some(SortType::TopSixHour) => "Top 6 Hour",
         Some(SortType::TopTwelveHour) => "Top 12 Hour",
+    }
+}
+
+fn comment_sort_to_text(sort_type: Option<CommentSortType>) -> &'static str {
+    match sort_type {
+        Some(sort) => match sort {
+            CommentSortType::Hot => "Hot",
+            CommentSortType::Top => "Top",
+            CommentSortType::New => "New",
+            CommentSortType::Old => "Old",
+        },
+        None => "None",
     }
 }
 
@@ -78,6 +94,46 @@ fn PostSort(
         >
             {sort_to_text(value)}
         </button>
+    }
+}
+
+#[component]
+pub fn CommentSortMenu(
+    cx: Scope,
+    sort: ReadSignal<Option<CommentSortType>>,
+    set_sort: WriteSignal<Option<CommentSortType>>,
+) -> impl IntoView {
+    let sort_menu_hidden = create_rw_signal(cx, true);
+
+    view! { cx,
+        <div>
+            <button
+                class="p-1 bg-neutral-800 hover:bg-neutral-500 border-gray-300 border-b-3 flex flex-row align-bottom"
+                on:click=move |_| {
+                    sort_menu_hidden.update(|u| *u = !*u);
+                }
+            >
+                <Icon icon=MaybeSignal::Static(BiIcon::BiSortDownRegular.into())/>
+                {move || comment_sort_to_text(sort())}
+            </button>
+            <div class="flex flex-col absolute z-30" class:hidden=sort_menu_hidden>
+                {CommentSortType::iter()
+                    .map(|sort| {
+                        view! { cx,
+                            <button
+                                class="p-1 bg-neutral-800 hover:bg-neutral-500 underline"
+                                on:click=move |_click| {
+                                    sort_menu_hidden.set(true);
+                                    set_sort(Some(sort));
+                                }
+                            >
+                                {sort.to_string()}
+                            </button>
+                        }
+                    })
+                    .collect::<Vec<_>>()}
+            </div>
+        </div>
     }
 }
 

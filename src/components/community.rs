@@ -78,7 +78,6 @@ pub fn CommunityBadge(
                                 {updated.map(|updated| view!{cx, <div class="text-gray-500">"(updated "<RelativeTime time=updated/>")"</div>})}
                             </div>
                         </div>
-
                     </div>
                     <SubscribeButton community_id=id subscribed />
                     {description.map(|description| view!{cx, <Markdown content=description />})}

@@ -8,6 +8,7 @@ pub mod post;
 pub mod post_view_controls;
 pub mod posts;
 pub mod profile;
+pub mod save_button;
 pub mod show_more;
 pub mod sorting_components;
 pub mod subscribe;

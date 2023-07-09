@@ -3,23 +3,21 @@ use std::collections::HashMap;
 use capybara_lemmy_client::{
     comment::{
         Comment, CommentAggregates, CommentSortType, CommentView, CreateCommentLike, GetComments,
+        SaveComment,
     },
     post::PostId,
     CapyClient,
 };
 use leptos::*;
+use leptos_icons::{BiIcon, BsIcon, Icon};
 use log::info;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     app::CurrentUser,
     components::{
-        community::CommunityBadge,
-        feed::virtual_scroll::{InfinitePage, VirtualScroller},
-        markdown::Markdown,
-        person::PersonView,
-        sorting_components::SortMenu,
-        time::RelativeTime,
+        feed::virtual_scroll::InfinitePage, markdown::Markdown, person::PersonView,
+        save_button::SaveButton, sorting_components::CommentSortMenu, time::RelativeTime,
         voter::Voter,
     },
 };
@@ -120,9 +118,10 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
         child_count,
         hot_rank,
     } = counts;
-    let subscribed = create_rw_signal(cx, subscribed);
+    // let subscribed = create_rw_signal(cx, subscribed);
     let my_vote = create_rw_signal(cx, my_vote);
     let user = use_context::<CurrentUser>(cx).unwrap();
+    let (saved, set_saved) = create_signal(cx, saved);
     create_effect(cx, move |prev| {
         let vote = my_vote();
         let user = user();
@@ -143,6 +142,24 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
         }
         (user, vote)
     });
+    create_effect(cx, move |prev| {
+        let saved = saved();
+        let user = user();
+        if let Some((Some(prev_user), prev)) = prev {
+            if Some(prev_user) == user && saved != prev {
+                spawn_local(async move {
+                    let client = use_context::<CapyClient>(cx).unwrap();
+                    let like = SaveComment {
+                        comment_id,
+                        save: saved,
+                        ..Default::default()
+                    };
+                    let _ = client.execute(like).await;
+                });
+            }
+        }
+        (user, saved)
+    });
     view! { cx,
         <div class="flex flex-row border-neutral-700 hover:border-neutral-600 border-solid border-t-2">
             <button
@@ -151,18 +168,29 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
             ></button>
             <Voter my_vote upvotes downvotes score/>
             <div class="flex flex-col transition" class:hidden=collapsed>
-                <div class="p-4">
-                    <div class="flex flex-row">
-                        <PersonView person=creator/>
-                        <CommunityBadge community subscribed/>
-                    </div>
-                    <Markdown content/>
-                    <div class="flex flex-row">
-                        {saved.then(|| "saved")} " " {} " " <RelativeTime time=published/> {updated
+                <div class="flex flex-row">
+                    <div class="flex flex-row text-gray-500">
+                        <RelativeTime time=published/>
+                        {updated
                             .map(|u| {
-                                view! { cx, <RelativeTime time=u/> }
+                                view! { cx,
+                                    "(updated: "
+                                    <RelativeTime time=u/>
+                                    ")"
+                                }
                             })}
                     </div>
+                </div>
+                <PersonView person=creator/>
+                <div class="p-2">
+                    <Markdown content/>
+                </div>
+                <div class="flex flex-row gap-2">
+                    <div class="flex flex-row bold text-gray-500 hover:text-gray-400 leading-none">
+                        <Icon icon=MaybeSignal::Static(BsIcon::BsReplyFill.into()) />
+                        " reply"
+                    </div>
+                    <SaveButton saved set_saved />
                 </div>
                 <div class="">
                     {children
@@ -179,7 +207,7 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
 
 #[component]
 pub fn PostComments(cx: Scope, post_id: PostId) -> impl IntoView {
-    let (sort, set_sort) = create_signal(cx, CommentSortType::Hot);
+    let (sort, set_sort) = create_signal(cx, Some(CommentSortType::Hot));
     let limit = Some(50);
     let post_comments = create_resource(
         cx,
@@ -189,7 +217,7 @@ pub fn PostComments(cx: Scope, post_id: PostId) -> impl IntoView {
             let comments = client
                 .execute(GetComments {
                     post_id: Some(post_id),
-                    sort: Some(sort),
+                    sort,
                     limit,
                     page: None,
                     ..Default::default()
@@ -201,7 +229,9 @@ pub fn PostComments(cx: Scope, post_id: PostId) -> impl IntoView {
     );
 
     view! { cx,
-        <div class="flex flex-row"><</div>
+        <div class="flex flex-row">
+            <CommentSortMenu sort set_sort/>
+        </div>
         <Suspense fallback=move || {
             view! { cx, "Loading" }
         }>
@@ -221,7 +251,7 @@ pub fn PostComments(cx: Scope, post_id: PostId) -> impl IntoView {
                                         let comments = client
                                             .execute(GetComments {
                                                 post_id: Some(post_id),
-                                                sort: Some(sort.get_untracked()),
+                                                sort: sort.get_untracked(),
                                                 limit: None,
                                                 page: Some(p as i64),
                                                 ..Default::default()

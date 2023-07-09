@@ -2,19 +2,23 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::error::Result;
 use async_trait::async_trait;
-use comment::{CommentResponse, CreateCommentLike, GetComments, GetCommentsResponse};
+use comment::{CommentResponse, CreateCommentLike, GetComments, GetCommentsResponse, SaveComment};
 use community::{
     CommunityResponse, FollowCommunity, GetCommunity, ListCommunities, ListCommunitiesResponse,
 };
 use error::ClientError;
 use log::info;
 use person::{GetPersonDetails, GetPersonDetailsResponse, Login, LoginResponse};
-use post::{CreatePostLike, GetPost, GetPostResponse, GetPosts, GetPostsResponse, PostResponse};
+use post::{
+    CreatePostLike, GetPost, GetPostResponse, GetPosts, GetPostsResponse, PostResponse, SavePost,
+};
 use sensitive::Sensitive;
 use serde::{de::DeserializeOwned, Serialize};
 use serde_wasm_bindgen::to_value;
 use site::{GetSite, GetSiteResponse};
 use wasm_bindgen::prelude::*;
+
+pub use strum;
 
 pub mod comment;
 pub mod community;
@@ -324,6 +328,40 @@ impl LemmyRequest for CreateCommentLike {
 
     fn get_path() -> &'static str {
         "/comment/like"
+    }
+
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()> {
+        self.auth = jwt.ok_or(ClientError::NotAuthorized)?;
+        Ok(())
+    }
+
+    fn get_http_mode() -> HttpMode {
+        HttpMode::POST
+    }
+}
+
+impl LemmyRequest for SaveComment {
+    type Response = CommentResponse;
+
+    fn get_path() -> &'static str {
+        "/comment/save"
+    }
+
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()> {
+        self.auth = jwt.ok_or(ClientError::NotAuthorized)?;
+        Ok(())
+    }
+
+    fn get_http_mode() -> HttpMode {
+        HttpMode::POST
+    }
+}
+
+impl LemmyRequest for SavePost {
+    type Response = PostResponse;
+
+    fn get_path() -> &'static str {
+        "/post/save"
     }
 
     fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()> {

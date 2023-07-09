@@ -7,7 +7,7 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use serde_with::skip_serializing_none;
-use strum::{Display, EnumString};
+use strum::{Display, EnumIter, EnumString};
 use url::Url;
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Default, Serialize, Deserialize)]
@@ -30,7 +30,18 @@ pub struct GetComments {
 }
 
 #[derive(
-    EnumString, Display, Debug, Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord,
+    EnumIter,
+    EnumString,
+    Display,
+    Debug,
+    Serialize,
+    Deserialize,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
 )]
 /// The comment sort types. See here for descriptions: https://join-lemmy.org/docs/en/users/03-votes-and-ranking.html
 pub enum CommentSortType {
@@ -60,6 +71,14 @@ pub struct CommentView {
     pub saved: bool,
     pub creator_blocked: bool,
     pub my_vote: Option<i16>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+/// Save / bookmark a comment.
+pub struct SaveComment {
+    pub comment_id: CommentId,
+    pub save: bool,
+    pub auth: Sensitive<String>,
 }
 
 #[skip_serializing_none]

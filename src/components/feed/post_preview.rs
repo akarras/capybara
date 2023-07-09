@@ -96,7 +96,7 @@ fn VideoPlayer(cx: Scope, src: String) -> impl IntoView {
             }
         }
     });
-    view! {cx, <video controls node_ref=video_player crossorigin="" class="h-96 w-fit aspect-video" src=src />}
+    view! {cx, <video controls node_ref=video_player class="h-96 w-fit aspect-video" src=src />}
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -273,7 +273,7 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                             let (expanded, set_expanded) = create_signal(cx, false);
                             view! { cx,
                                 <img
-
+                                    lazy="true"
                                     on:click=move |_| set_expanded(!expanded())
                                     class=move || {
                                         if !expanded() && view_mode.0() == ViewMode::Default {
@@ -301,8 +301,17 @@ pub fn PostPreview(cx: Scope, post: PostView) -> impl IntoView {
                                 view! { cx, <div class="text-sm">{description}</div> }
                             })}
                         {embed_video_url
-                            .map(|url| {
-                                view! { cx, <iframe class="h-96 w-fit aspect-video" src=url.to_string()></iframe> }
+                            .map(|mut url| {
+                                match url.host_str(){ Some("yewtu.be" | "youtube.com") =>{url.query_pairs_mut().append_pair("autoplay", "0");} _ => {} }
+                                let src = url.to_string();
+                                if src.contains(".mp4") {
+                                    view!{cx, <VideoPlayer src/>}.into_view(cx)
+                                } else {
+
+                                    view! { cx, <iframe lazy="true" sandbox="allow-scripts allow-same-origin" allowfullscreen
+                                    frameborder="0" class="h-96 w-fit aspect-video" src=src></iframe> }.into_view(cx)
+                                }
+
                             })}
                         {url.map(|u| {let u = u.to_string();
                             is_video(&u).then(||
