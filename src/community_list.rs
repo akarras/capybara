@@ -99,12 +99,14 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
             }>
                 {move || {
                     let communities = communities.read(cx);
+
                     communities
                         .map(|community| {
                             view! { cx,
                                 <ErrorView
                                     value=community
                                     ok=move |communities| {
+                                        let data = create_rw_signal(cx, communities.communities);
                                         view! { cx,
                                             <InfinitePage
                                                 get_page=move |page| {
@@ -127,7 +129,7 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
                                                             .unwrap_or_default()
                                                     }
                                                 }
-                                                initial_data=communities.communities
+                                                data
                                                 key=|c| c.community.id
                                                 view=|cx, community| {
                                                     view! { cx, <CommunityView community/> }

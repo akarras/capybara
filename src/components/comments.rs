@@ -16,9 +16,14 @@ use serde::{Deserialize, Serialize};
 use crate::{
     app::CurrentUser,
     components::{
-        feed::virtual_scroll::InfinitePage, markdown::Markdown, person::PersonView,
-        reply_box::ReplyBox, save_button::SaveButton, sorting_components::CommentSortMenu,
-        time::RelativeTime, voter::Voter,
+        feed::virtual_scroll::InfinitePage,
+        markdown::Markdown,
+        person::PersonView,
+        reply_box::{ReplyBox, ReplyButton},
+        save_button::SaveButton,
+        sorting_components::CommentSortMenu,
+        time::RelativeTime,
+        voter::Voter,
     },
 };
 
@@ -188,24 +193,10 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
                     <Markdown content/>
                 </div>
                 <div class="flex flex-row gap-2">
-                    <div
-                        class=move || {
-                            if reply() {
-                                "flex flex-row bold text-yellow-500 hover:text-yellow-400 bg-gray-500 rounded leading-none"
-                            } else {
-                                "flex flex-row bold text-gray-500 hover:text-gray-400 leading-none"
-                            }
-                        }
-                        on:click=move |_| {
-                            set_reply(!reply());
-                        }
-                    >
-                        <Icon icon=MaybeSignal::Static(BsIcon::BsReplyFill.into())/>
-                        " reply"
-                    </div>
+                    <ReplyButton reply set_reply />
                     <SaveButton saved set_saved/>
                 </div>
-                <ReplyBox post_id parent_id=Some(comment_id) reply_open=reply set_reply_open=set_reply children />
+                <ReplyBox post_id parent_id=Some(comment_id) reply set_reply children />
                 <div class="">
                     {move || children()
                         .into_iter()
@@ -241,10 +232,11 @@ pub fn PostComments(cx: Scope, post_id: PostId) -> impl IntoView {
             comments
         },
     );
-
+    let (reply, set_reply) = create_signal(cx, false);
     view! { cx,
         <div class="flex flex-row">
             <CommentSortMenu sort set_sort/>
+            <ReplyButton reply set_reply />
         </div>
         <Suspense fallback=move || {
             view! { cx, "Loading" }
@@ -254,7 +246,9 @@ pub fn PostComments(cx: Scope, post_id: PostId) -> impl IntoView {
                     .read(cx)
                     .map(|comments| {
                         let comments = CommentWithChildren::from_comments(comments.comments);
+                        let comments = create_rw_signal(cx, comments);
                         view! { cx,
+                            <ReplyBox reply set_reply post_id parent_id=None children=comments />
                             <InfinitePage
                                 view=move |cx, comment| {
                                     view! { cx, <Comment comment=comment/> }
@@ -275,7 +269,7 @@ pub fn PostComments(cx: Scope, post_id: PostId) -> impl IntoView {
                                         CommentWithChildren::from_comments(comments.comments)
                                     }
                                 }
-                                initial_data=comments
+                                data=comments
                                 key=|c| c.0.comment.id
                                 cache_key=("comment_view", post_id, sort())
                             />

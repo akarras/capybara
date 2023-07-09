@@ -21,7 +21,7 @@ struct ScrollerData<T> {
 pub fn InfinitePage<P, PFut, K, KF, VF, V, T, CK>(
     cx: Scope,
     get_page: P,
-    initial_data: Vec<T>,
+    data: RwSignal<Vec<T>>,
     key: KF,
     view: VF,
     cache_key: CK,
@@ -41,7 +41,6 @@ where
     let cache_key = hasher.finish();
 
     let scroller = create_node_ref(cx);
-    let data = create_rw_signal(cx, initial_data);
     let (hydrating, set_hydrating) = create_signal(cx, false);
     let current_page = create_rw_signal(cx, 1);
     let (at_end, set_at_end) = create_signal(cx, false);

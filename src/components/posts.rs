@@ -67,6 +67,7 @@ pub fn Posts(
                                             let community_temp = community.and_then(|c| c.get());
                                             let community_id = community_temp.as_ref().and_then(|id| id.id());
                                             let community_name = community_temp.as_ref().and_then(|name| name.name());
+                                            let posts = create_rw_signal(cx, posts);
                                             view! { cx,
                                                 <InfinitePage
                                                     get_page=move |page| async move {
@@ -91,7 +92,7 @@ pub fn Posts(
                                                     view=move |cx, post| {
                                                         view! { cx, <PostPreview post/> }
                                                     }
-                                                    initial_data=posts
+                                                    data=posts
                                                     cache_key=(("posts", sort, type_, community_id, community_name))
                                                 />
                                             }
