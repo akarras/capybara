@@ -2,8 +2,8 @@ use std::collections::HashMap;
 
 use capybara_lemmy_client::{
     comment::{
-        Comment, CommentAggregates, CommentSortType, CommentView, CreateCommentLike, GetComments,
-        SaveComment,
+        Comment, CommentAggregates, CommentSortType, CommentView, CreateComment, CreateCommentLike,
+        GetComments, SaveComment,
     },
     post::PostId,
     CapyClient,
@@ -17,13 +17,13 @@ use crate::{
     app::CurrentUser,
     components::{
         feed::virtual_scroll::InfinitePage, markdown::Markdown, person::PersonView,
-        save_button::SaveButton, sorting_components::CommentSortMenu, time::RelativeTime,
-        voter::Voter,
+        reply_box::ReplyBox, save_button::SaveButton, sorting_components::CommentSortMenu,
+        time::RelativeTime, voter::Voter,
     },
 };
 
 #[derive(Serialize, Deserialize, Clone)]
-struct CommentWithChildren(CommentView, Vec<CommentWithChildren>);
+pub struct CommentWithChildren(pub CommentView, pub Vec<CommentWithChildren>);
 
 fn get_children(
     comment: CommentView,
@@ -160,6 +160,8 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
         }
         (user, saved)
     });
+    let children = create_rw_signal(cx, children);
+    let (reply, set_reply) = create_signal(cx, false);
     view! { cx,
         <div class="flex flex-row border-neutral-700 hover:border-neutral-600 border-solid border-t-2">
             <button
@@ -167,7 +169,7 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
                 on:click=move |_| { set_collapsed(!collapsed()) }
             ></button>
             <Voter my_vote upvotes downvotes score/>
-            <div class="flex flex-col transition" class:hidden=collapsed>
+            <div class="flex flex-col grow transition" class:hidden=collapsed>
                 <div class="flex flex-row">
                     <div class="flex flex-row text-gray-500">
                         <RelativeTime time=published/>
@@ -186,14 +188,26 @@ fn Comment(cx: Scope, comment: CommentWithChildren) -> impl IntoView {
                     <Markdown content/>
                 </div>
                 <div class="flex flex-row gap-2">
-                    <div class="flex flex-row bold text-gray-500 hover:text-gray-400 leading-none">
-                        <Icon icon=MaybeSignal::Static(BsIcon::BsReplyFill.into()) />
+                    <div
+                        class=move || {
+                            if reply() {
+                                "flex flex-row bold text-yellow-500 hover:text-yellow-400 bg-gray-500 rounded leading-none"
+                            } else {
+                                "flex flex-row bold text-gray-500 hover:text-gray-400 leading-none"
+                            }
+                        }
+                        on:click=move |_| {
+                            set_reply(!reply());
+                        }
+                    >
+                        <Icon icon=MaybeSignal::Static(BsIcon::BsReplyFill.into())/>
                         " reply"
                     </div>
-                    <SaveButton saved set_saved />
+                    <SaveButton saved set_saved/>
                 </div>
+                <ReplyBox post_id parent_id=Some(comment_id) reply_open=reply set_reply_open=set_reply children />
                 <div class="">
-                    {children
+                    {move || children()
                         .into_iter()
                         .map(|comment| {
                             view! { cx, <Comment comment/> }
@@ -263,7 +277,7 @@ pub fn PostComments(cx: Scope, post_id: PostId) -> impl IntoView {
                                 }
                                 initial_data=comments
                                 key=|c| c.0.comment.id
-                                cache_key=("comment_view", post_id)
+                                cache_key=("comment_view", post_id, sort())
                             />
                         }
                     })

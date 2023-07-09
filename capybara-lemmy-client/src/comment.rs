@@ -42,6 +42,7 @@ pub struct GetComments {
     Eq,
     PartialOrd,
     Ord,
+    Hash,
 )]
 /// The comment sort types. See here for descriptions: https://join-lemmy.org/docs/en/users/03-votes-and-ranking.html
 pub enum CommentSortType {
@@ -136,4 +137,17 @@ pub struct CommentAggregates {
     /// The total number of children in this comment branch.
     pub child_count: i32,
     pub hot_rank: i32,
+}
+
+#[skip_serializing_none]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+/// Create a comment.
+pub struct CreateComment {
+    pub content: String,
+    pub post_id: PostId,
+    pub parent_id: Option<CommentId>,
+    pub language_id: Option<LanguageId>,
+    /// An optional front-end ID, to help UIs determine where the comment should go.
+    pub form_id: Option<String>,
+    pub auth: Sensitive<String>,
 }

@@ -4,7 +4,7 @@ use capybara_lemmy_client::{
     CapyClient,
 };
 use leptos::*;
-use leptos_router::use_params_map;
+use leptos_router::{use_params_map, use_query_map};
 use log::info;
 
 #[component]

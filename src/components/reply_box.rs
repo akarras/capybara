@@ -1,0 +1,54 @@
+use capybara_lemmy_client::{
+    comment::{CommentId, CreateComment},
+    post::PostId,
+    CapyClient,
+};
+use leptos::*;
+
+use super::comments::CommentWithChildren;
+
+#[component]
+pub fn ReplyBox(
+    cx: Scope,
+    post_id: PostId,
+    parent_id: Option<CommentId>,
+    reply_open: ReadSignal<bool>,
+    set_reply_open: WriteSignal<bool>,
+    children: RwSignal<Vec<CommentWithChildren>>,
+) -> impl IntoView {
+    let (content, set_content) = create_signal(cx, "".to_string());
+    view! { cx,
+        <div class="flex flex-col" class:hidden=move || !reply_open()>
+            <textarea
+                class="h-36 w-[calc(100%-30px)] rounded ring inset-2 ring-neutral-700 focus:ring-neutral-500 bg-neutral-700 text-neutral-100 p-4 m-4"
+                on:input=move |i| { set_content(event_target_value(&i)) }
+            ></textarea>
+            <div class="flex flex-row">
+                <button
+                    class="bg-gray-600 p-1 rounded hover:bg-gray-300"
+                    on:click=move |_| {
+                        let request = CreateComment {
+                            content: content(),
+                            post_id,
+                            parent_id,
+                            ..Default::default()
+                        };
+                        set_content("".to_string());
+                        set_reply_open(false);
+                        spawn_local(async move {
+                            let client = use_context::<CapyClient>(cx).unwrap();
+                            if let Ok(response) = client.execute(request).await {
+                                children
+                                    .update(|c| {
+                                        c.push(CommentWithChildren(response.comment_view, vec![]));
+                                    });
+                            }
+                        });
+                    }
+                >
+                    "send reply"
+                </button>
+            </div>
+        </div>
+    }
+}

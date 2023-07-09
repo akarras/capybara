@@ -2,7 +2,10 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::error::Result;
 use async_trait::async_trait;
-use comment::{CommentResponse, CreateCommentLike, GetComments, GetCommentsResponse, SaveComment};
+use comment::{
+    CommentResponse, CreateComment, CreateCommentLike, GetComments, GetCommentsResponse,
+    SaveComment,
+};
 use community::{
     CommunityResponse, FollowCommunity, GetCommunity, ListCommunities, ListCommunitiesResponse,
 };
@@ -362,6 +365,23 @@ impl LemmyRequest for SavePost {
 
     fn get_path() -> &'static str {
         "/post/save"
+    }
+
+    fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()> {
+        self.auth = jwt.ok_or(ClientError::NotAuthorized)?;
+        Ok(())
+    }
+
+    fn get_http_mode() -> HttpMode {
+        HttpMode::POST
+    }
+}
+
+impl LemmyRequest for CreateComment {
+    type Response = CommentResponse;
+
+    fn get_path() -> &'static str {
+        "/comment"
     }
 
     fn set_auth(&mut self, jwt: Option<Sensitive<String>>) -> Result<()> {
