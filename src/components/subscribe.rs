@@ -50,7 +50,7 @@ pub fn SubscribeButton(
         }
         (user, new_sub)
     });
-    let _ = view!{cx, <div class="animate-pulse"></div>};
+    let _ = view! {cx, <div class="animate-pulse"></div>};
     view! { cx,
         {move || {
             match (current_user(), subscribed()) {

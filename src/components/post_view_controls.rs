@@ -1,6 +1,6 @@
 use leptos::*;
 
-use crate::{components::feed::post_preview::ViewMode, app::HideRead};
+use crate::{app::HideRead, components::feed::post_preview::ViewMode};
 
 use super::feed::post_preview::{GlobalBlurState, GlobalViewMode};
 

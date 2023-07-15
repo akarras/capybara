@@ -4,7 +4,7 @@ use capybara_lemmy_client::{
     CapyClient,
 };
 use leptos::*;
-use leptos_icons::{Icon, FaIcon, BsIcon};
+use leptos_icons::{BsIcon, FaIcon, Icon};
 
 use crate::{
     app::{CurrentUser, ErrorView},
@@ -13,7 +13,8 @@ use crate::{
         feed::virtual_scroll::InfinitePage,
         numbers::NumberVis,
         sorting_components::{SortMenu, TypeMenu},
-        subscribe::SubscribeButton, time::RelativeTime,
+        subscribe::SubscribeButton,
+        time::RelativeTime,
     },
 };
 
@@ -97,7 +98,9 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
             }>
                 {move || {
                     let communities = communities.read(cx);
-
+                    let show_nsfw = show_nsfw();
+                    let type_ = type_();
+                    let sort = sort();
                     communities
                         .map(|community| {
                             view! { cx,
@@ -110,9 +113,6 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
                                                 get_page=move |page| {
                                                     async move {
                                                         let client = use_context::<CapyClient>(cx).unwrap();
-                                                        let show_nsfw = show_nsfw.get_untracked();
-                                                        let type_ = type_.get_untracked();
-                                                        let sort = sort.get_untracked();
                                                         client
                                                             .execute(ListCommunities {
                                                                 show_nsfw,
@@ -133,7 +133,7 @@ pub fn CommunityList(cx: Scope) -> impl IntoView {
                                                 view=|cx, community| {
                                                     view! { cx, <CommunityView community/> }
                                                 }
-                                                cache_key=("community_list", show_nsfw(), type_(), sort())
+                                                cache_key=("community_list", show_nsfw, type_, sort)
                                             />
                                         }
                                     }

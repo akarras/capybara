@@ -51,7 +51,7 @@ pub(crate) fn Login(cx: Scope) -> impl IntoView {
                 />
                 <button
                     class="p-2 bg-red-500 dark:bg-red-700 text-white dark:text-neutral-200 rounded-md"
-                    on:click=move |e| {
+                    on:click=move |_e| {
                         let login_request = LemmyLogin {
                             username_or_email: Sensitive::new(username.get_untracked()),
                             password: Sensitive::new(password.get_untracked()),

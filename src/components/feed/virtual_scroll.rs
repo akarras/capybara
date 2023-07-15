@@ -1,6 +1,12 @@
-use gloo::storage::{SessionStorage, Storage};
+use gloo::{
+    storage::{SessionStorage, Storage},
+    utils::{body, document},
+};
 use leptos::*;
-use leptos_use::{use_scroll_with_options, ScrollOffset, UseScrollOptions, UseScrollReturn};
+use leptos_use::{
+    use_element_size, use_scroll_with_options, use_window_scroll, ScrollOffset, UseScrollOptions,
+    UseScrollReturn,
+};
 use log::info;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
@@ -40,27 +46,10 @@ where
     cache_key.hash(&mut hasher);
     let cache_key = hasher.finish();
 
-    let scroller = create_node_ref(cx);
+    // let scroller = create_node_ref(cx);
     let (hydrating, set_hydrating) = create_signal(cx, false);
     let current_page = create_rw_signal(cx, 1);
-    let (at_end, set_at_end) = create_signal(cx, false);
-    let UseScrollReturn {
-        set_y,
-        arrived_state,
-        y,
-        ..
-    } = use_scroll_with_options(
-        cx,
-        scroller,
-        UseScrollOptions::default().offset(ScrollOffset {
-            top: 0.0,
-            bottom: 1000.0,
-            right: 0.0,
-            left: 0.0,
-        }),
-    );
-    let set_y = Rc::new(set_y);
-    let set_y_2 = set_y.clone();
+    let (at_end, set_at_end) = create_signal(cx, data.get_untracked().is_empty());
     if let Ok(previous_session) = SessionStorage::get::<ScrollerData<T>>(cache_key.to_string()) {
         let ScrollerData {
             data: prev_data,
@@ -68,13 +57,14 @@ where
         } = previous_session;
         data.update(|d| *d = prev_data);
         request_animation_frame(move || {
-            set_y_2(y_scroll);
+            window().scroll_to_with_x_and_y(0.0, y_scroll);
         });
         info!("restored previous scrolling list {y_scroll}");
     }
+    let (_window_x, y_scroll) = use_window_scroll(cx);
     on_cleanup(cx, move || {
-        let y_scroll = y();
-        let data = data();
+        let y_scroll = y_scroll.get_untracked();
+        let data = data.get_untracked();
         let _ = SessionStorage::set(cache_key.to_string(), ScrollerData { y_scroll, data });
     });
     let hydrate = move || {
@@ -96,31 +86,74 @@ where
             });
         }
     };
-    let at_bottom = create_memo(cx, move |_| arrived_state().bottom);
+
+    let at_top = move || y_scroll() <= 100.0;
+    let at_bottom = create_memo(cx, move |_| {
+        let scroll_height = if let Some(scrolling_element) = document().scrolling_element() {
+            scrolling_element.scroll_height()
+        } else {
+            body().scroll_height()
+        };
+
+        info!("y_scroll: {} height: {}", y_scroll(), scroll_height);
+        y_scroll() >= (scroll_height - 1500) as f64
+    });
     create_effect(cx, move |_| {
-        if !hydrating() && at_bottom() {
+        if at_bottom() {
+            hydrate();
+        }
+    });
+    // refresh effect
+    create_effect(cx, move |_| {
+        if y_scroll() < -30.0 && !hydrating() {
+            data.update(|d| d.clear());
+            current_page.set(0);
+            hydrate();
+        }
+    });
+    // let is_active = intersections.is_active;
+    create_effect(cx, move |_| {
+        info!(
+            "hydrating: {} at_end: {} at_top: {} y: {} at_bottom: {}",
+            hydrating(),
+            at_end(),
+            at_top(),
+            y_scroll(),
+            at_bottom()
+        );
+        if !hydrating() && at_end() {
             hydrate();
         }
     });
 
     view! {cx,
-    <div class="max-h-screen flex-auto overflow-y-auto h-[calc(100vh-74px)]" node_ref=scroller>
-        <button class="bg-gray-700 px-2 text-lg absolute bottom-10 right-10 rounded-md" on:click=move |_| {
-            set_y(0.0);
-        }>"Back to top"</button>
-        <For
-        each=data
-        key
-        view
-        />
 
+        <button class="bg-gray-700 px-2 text-lg rounded-md" on:click=move |_| {
+            data.update(|d| d.clear());
+            current_page.set(0);
+            hydrate();
+        }>
+            "Force Refresh"
+        </button>
+        <button class:hidden=at_top class="bg-gray-700 px-2 text-lg fixed bottom-10 right-20 rounded-md hover:bg-gray-400 z-50" on:click=move |_| {
+            info!("scrolled");
+            window().scroll_to_with_x_and_y(0.0, 0.0);
+        }>"Back to top"</button>
+        <div class="flex flex-col">
+            <For
+            each=data
+            key
+            view
+            />
+        </div>
         {move || hydrating().then(|| view!{cx, "Loading!"})}
         {move || (!hydrating() && !at_end()).then(|| view!{cx, <button class="bg-gray-300 rounded px-3" on:click=move |_| {
             hydrate();
         }>"load more"</button>})}
-        {move || at_end().then(|| view!{cx, "Wow, you're at the end!"})}
+        {move || (at_end() && !hydrating()).then(|| view!{cx, "Wow, you're at the end!"})}
 
-    </div>}
+
+    }
 }
 
 #[component]

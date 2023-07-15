@@ -1,18 +1,11 @@
 use crate::{
     community::Community,
-    community_list::{CommunityList},
-    components::{
-        feed::{post_preview::*},
-        post::Post,
-        posts::Posts,
-        profile::Profile,
-    },
+    community_list::CommunityList,
+    components::{feed::post_preview::*, post::Post, posts::Posts, profile::Profile},
     login::Login,
     settings::{LoginInfo, Settings},
 };
-use capybara_lemmy_client::{
-    CapyClient,
-};
+use capybara_lemmy_client::CapyClient;
 use gloo::storage::{SessionStorage, Storage};
 use leptos::*;
 use leptos_icons::{BiIcon, Icon};

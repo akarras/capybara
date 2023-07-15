@@ -90,14 +90,14 @@ fn VideoPlayer(cx: Scope, src: String) -> impl IntoView {
             cast
         }) {
             if enabled {
-                player.play();
+                let _ = player.play();
             } else {
-                player.pause();
+                let _ = player.pause();
             }
         }
     });
     let global_view_mode = use_context::<GlobalViewMode>(cx).unwrap();
-    
+
     view! {cx, <video controls node_ref=video_player class=move || match global_view_mode.0()  { ViewMode::BigImage => "min-h-96 min-w-96 max-h-[calc(100vh-200px)] max-w-full aspect-video", ViewMode::Default => "h-96 w-fit aspect-video" } src=src />}
 }
 
