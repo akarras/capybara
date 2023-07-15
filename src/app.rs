@@ -80,7 +80,7 @@ pub fn App(cx: Scope) -> impl IntoView {
     view! { cx,
         <Body class="bg-neutral-100 dark:bg-neutral-900 text-base dark:text-white"/>
         <main class="container mx-auto px-4">
-            <div class="flex flex-row gap-2">
+            <nav class="flex flex-row gap-2 sticky top-0 bg-neutral-900 z-50">
                 <a href="/">"home"</a>
                 <a href="/login">"Login"</a>
                 <a href="/communities">"Communities"</a>
@@ -125,7 +125,7 @@ pub fn App(cx: Scope) -> impl IntoView {
                         })
                         .collect::<Vec<_>>()
                 }}
-            </div>
+            </nav>
             <Router>
                 <Routes>
                     <Route

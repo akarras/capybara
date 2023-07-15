@@ -42,13 +42,14 @@ pub fn Posts(
         },
     );
     view! { cx,
-        <div class="flex flex-col">
-            <div class="flex flex-row sticky h-10">
+        <div class="flex flex-row sticky top-10 h-10 bg-neutral-700 w-fit z-50">
                 <SortMenu sort set_sort/>
                 <TypeMenu type_ set_type/>
                 <div class="w-5"></div>
                 <PostViewControls />
-            </div>
+        </div>
+        <div class="flex flex-col">
+            
             <Suspense fallback=move || {
                 view! { cx, "Loading" }
             }>
